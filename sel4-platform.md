@@ -1,6 +1,13 @@
 # seL4 Platform
 
-This short note describes the abstractions in the base layer of the seL4 platform.
+seL4 Platform is an operating system abstraction layer for seL4.
+
+The seL4 microkernel provides a highly-flexible and unconstrained set of mechanisms that can be used for building systems.
+While very powerful, this flexibility can make it difficult to design systems as there is a mismatch between seL4 concepts, and abstractions that are useful for building systems.
+
+The seL4 Platform provides a much simpler and constrained set of abstractions that can be used for building certain types of systems.
+A goal of providing this set of abstractions is to enable better software reuse when building systems, by enabling the creation of software components that can interact in a predictable manner.
+
 
 **NOTE**: In the current drafting concepts and abstractions may be referenced prior to their description.
 Please read through the entire document before providing a comment on any specific part.
