@@ -47,33 +47,32 @@ The seL4 platform is not designed for massively multi-core systems, nor systems 
 A **protection domain** (PD) is the fundamental runtime abstraction in the seL4 platform.
 It is analogous, but very different in detail, to a process on a UNIX system.
 
-A PD provides a thread-of-control that executes within a fixed virtual memory space, with a fixed set of capabilities.
+A PD provides a thread-of-control that executes within a fixed seL4 virtual memory space, with a fixed set of seL4 capabilities that enable access to a limited set of seL4 managed resources.
 
-The PD operates at a fixed priority on a specific CPU core.
+The PD operates at a fixed seL4 priority level.
+Each PD has an associated seL4 scheduling object.
+The seL4 scheduling objects controls which core the protection domain normally executes on.
 
-A PD *may* provide a *protected procedure* that can be called from other PDs.
-Note: The protected procedure always executes on the caller PDs core, but with the priority of the callee's PD.
+When an seL4 Platform system is booted all protection domains in the system execute an *initialisation* procedure.
+The initialisation procedure runs using the PD's seL4 scheduling object.
 
-A protection domain has three entry points:
+After the initialisation procedure is complete the protection domain's *notification* procedure will be invoked whenever the protection domain receives a notification.
+The notification procedure also runs using the PD's seL4 scheduling object.
+The scheduling procedure will not run at the same time as the initialisation procedure, and will never be called in parallel (i.e. there is only a single instance of the notification procedure running at any point in time).
 
-* initialisation
-* notification handler
-* protected procedure
+In addition to the initialisation and notification procedures a protection domain *may* provide a *protected* procedure.
+The *protected* procedure is one that can be call from a different protection domain.
+When the protected procedure is called it shall runs at the PD's priority, but will use the **callers** seL4 scheduling object.
+A consequence of this is that the protected procedure may run on a different core to that on which the initialisation and notification procedures run.
+The protected procedure will not run in parallel with either the initialisation or the notification procedures.
 
-The initialisation entry point is called only once.
-The notification handler and protected procedure handler entry points are called multiple times.
-Entry points do *not* run concurrently.
+There is a small set of seL4 platform APIs that a protection domain may make use of (from any type of procedure).
+These are:
 
-Initialisation runs on a special, one-time, start-up scheduler context.
-Notification handler run on the PDs configured scheduler context (which includes the core on which these run).
-Protected procedures run on the caller's scheduler context (which may mean protected procedure run on a different core to the notification handler).
+* calling a protected procedure in a different protection domain
+* sending a notification to a different protection domain
 
-There is a very narrow set of platform functions that can be accessed by the entry points:
-
-* performing a protected procedure call
-* notifying another protection domain
-
-(In both cases with appropriate access control enforced by seL4 capabilities).
+These calls only possible in the case where a communication channel is established with the other protection domain.
 
 
 ### Communication Channels
