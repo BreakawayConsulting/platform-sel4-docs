@@ -37,8 +37,8 @@ Following is a list of the terms introduced in this document.
 
 The seL4 Platform is designed to run on multi-core systems.
 
-A multi-core system is one in which there are multiple identical CPUs sharing the same L2 cache with uniform memory access.
-Such system are usually limited to eight cores at most.
+A multi-core processor is one in which there are multiple identical processing cores sharing the same L2 cache with uniform memory access.
+Such a processor is usually limited to eight cores at most.
 
 The seL4 platform is not designed for massively multi-core systems, nor systems with non-uniform memory access (NUMA).
 
