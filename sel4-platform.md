@@ -14,10 +14,11 @@ Please read through the entire document before providing a comment on any specif
 Apologies, hopefully I can come up with a better structure in the future to avoid this problem.
 
 
-## Special terms
+## Terminology
 
-This is a list of words that mean something special.
-If you see this term used before it is specifically defined please be patient as it will be defined in full later in the document.
+As with any set of abstractions there are words that take on special meanings.
+This document attempts to clearly describe all of these terms, however as the concepts and abstractions are inter-related it is sometimes necessary to use a term prior to its formal introduction.
+Following is a list of the terms introduced in this document.
 
 * core
 * trust
