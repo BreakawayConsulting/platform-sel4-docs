@@ -1,6 +1,6 @@
 # seL4 Platform
 
-seL4 Platform is an operating system abstraction layer for seL4.
+seL4 Platform is an operating system personality for the seL4 microkernel.
 
 The seL4 microkernel provides a highly-flexible and unconstrained set of mechanisms that can be used for building systems.
 While very powerful, this flexibility can make it difficult to design systems as there is a mismatch between seL4 concepts, and abstractions that are useful for building systems.
