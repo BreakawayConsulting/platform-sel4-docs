@@ -15,13 +15,10 @@ This document attempts to clearly describe all of these terms, however as the co
 Following is a list of the terms introduced in this document.
 
 * core
-* trust
 * protection domain (PD)
-* system
-* static system
-* dynamic system
-* static protection domain
-* dynamic protection domain
+* communication channel (CC)
+* memory region
+* notification
 * protection procedure call (PPC)
 
 
@@ -29,12 +26,12 @@ Following is a list of the terms introduced in this document.
 
 ### Core
 
-The seL4 Platform is designed to run on multi-core systems.
+seL4 Platform is designed to run on multi-core systems.
 
 A multi-core processor is one in which there are multiple identical processing cores sharing the same L2 cache with uniform memory access.
 Such a processor is usually limited to eight cores at most.
 
-The seL4 platform is not designed for massively multi-core systems, nor systems with non-uniform memory access (NUMA).
+seL4 platform is not designed for massively multi-core systems, nor systems with non-uniform memory access (NUMA).
 
 ### Protection Domain
 
@@ -44,7 +41,7 @@ It is analogous, but very different in detail, to a process on a UNIX system.
 A PD provides a thread-of-control that executes within a fixed seL4 virtual memory space, with a fixed set of seL4 capabilities that enable access to a limited set of seL4 managed resources.
 
 The PD operates at a fixed seL4 priority level.
-Each PD has an associated seL4 scheduling object.
+Each PD has an associated seL4 scheduling context.
 The seL4 scheduling objects controls which core the protection domain normally executes on.
 
 When an seL4 Platform system is booted all protection domains in the system execute an *initialisation* procedure.
@@ -63,8 +60,8 @@ The protected procedure will not run in parallel with either the initialisation 
 There is a small set of seL4 platform APIs that a protection domain may make use of (from any type of procedure).
 These are:
 
-* calling a protected procedure in a different protection domain
-* sending a notification to a different protection domain
+* call a protected procedure in a different protection domain
+* send a notification to a different protection domain
 
 These calls only possible in the case where a communication channel is established with the other protection domain.
 
@@ -99,12 +96,12 @@ Protection domains can communicate (for both control and data exchange purposes)
 
 Communication is always considered to be two-way from an information flow point of view; there is no concept of one-way communication between protection domains.
 
-Communication between two PDs does **not** imply a specific trust relationship between the two PDs.
+Communication between two PDs does **not** necessarily imply a specific trust relationship between the two PDs.
 
 A communication channel between two PDs provides the following:
 
 * Ability for each PD to notify the other PD.
-* Region of read-write memory shared between the two PDs.
+* Ability to reference memory regions associated with the communication channel.
 * Ability for one PD to make protected procedure calls to the other PD [note: this is optional, and *does* imply a trust relationship].
 
 The communication relationships between protection domains can be expressed as a non-directed cyclic graph.
