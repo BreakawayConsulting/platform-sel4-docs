@@ -75,6 +75,30 @@ These are:
 These calls only possible in the case where a communication channel is established with the other protection domain.
 
 
+### Memory regions
+
+A memory region is a range of physical memory.
+A memory region must be at least page size.
+The size of a memory region my by a power-of-2.
+The base address of a memory region must be aligned to its size.
+
+Each memory region can be mapped into a protection domain.
+The mapping attributes include:
+
+* virtual address space
+* caching attributes
+* permissions attributes
+
+It is valid that a memory region may be mapped into a protection domain multiple times (for example, with different caching attributes).
+
+A memory region can be mapped into multiple different protection domains.
+The virtual address can be different in each protection domain.
+
+In addition to mapping a memory region into a protection domain, a memory region may also be *attached* to a communication channel.
+An attached communication channel enables memory pointers to objects within the memory region to be safely shared between protection domains.
+Normally, a memory region that is attached to a communication channel would also be mapping into both protection domains, however there are some cases in which a memory region is attached to the communication channel *without* also being mapping into both protection domains.
+
+
 ### Communication Channels
 
 Protection domains can communicate (for both control and data exchange purposes) via *communication channels*.
