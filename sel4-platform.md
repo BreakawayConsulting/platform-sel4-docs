@@ -173,6 +173,84 @@ On receiving a notification the PD examines the shared memory to identify the wo
 The exact format of the shared memory region is not currently defined.
 
 
+## Runtime API
+
+### Types
+
+`Channel` is an opaque reference to a specific channel.
+This type is used extensively through-out the functional API.
+
+`Memptr` is an opaque reference to a pointer.
+Memptr can be decoded into specific pointers.
+
+### Entry Points
+
+#### `void init(void)`
+
+Every protection must expose an init function.
+This is called by the system when the protection domain is created.
+The `init` function executes using the protection domain's scheduling context.
+
+#### `void notified(Channel channel)`
+
+The `notified` entry point is called by the system when the protection domain has received a notification via a communication channel.
+A channel identifier is passed to the function indicating which specific channel was notified.
+
+
+#### `void protected(Channel channel)`
+
+The `protected` entry point is optional.
+The `protected` entry point is called by the system when another PD makes a protected call to the PD via a channel.
+The caller is identified via the `channel` parameter.
+
+The parameters passed by the caller may be accessed via **FIXME**.
+Any return values should be set via **FIXME**.
+
+When the `protected` entry point returns, the protected procedure call completes.
+
+
+### Functions
+
+#### `void notify(Channel channel)`
+
+Send a notification to a specific channel.
+
+#### `void ppcall(Channel channel)`
+
+Perform a protected-procedure call to a specified channel.
+Any parameters should be set via **FIXME**.
+
+#### `Memptr memptr_encode(Channel channel, ....)`
+
+Encode a pointer to a memory address.
+
+#### `void * memptr_decode(Channel channel, Memptr memptr)`
+
+Decode the `memptr` to a pointer.
+
+**FIXME:** If this is a bad ptr, how is that handled? Return null or exception?
+
+#### `Dmaptr memptr_decode(Channel channel, Memptr memptr)`
+
+Decode the `memptr` to a DMA address
+This is used to convert `memptr` to values that can be used by bus masters.
+
+**FIXME:** Handling of bad ptrs, also likely need a DMA context of some description for cases when there is I/O MMU.
+
+
+#### `Memptr memptr_transcode(Channel from_channel, Memptr memptr, Channel to_channel)`
+
+Directly decode/encode a `memptr` associated with `from_channel` to a memptr associated with `to_channel`.
+
+#### Setting IPC buffers
+
+**FIXME**: Need to have APIs for setting the IPC buffer.
+
+#### Cache operations
+
+**FIXME**: Need to have APIs for performing cache flushes, etc.
+
+
 ## System construction concepts
 
 This section introduces some other concepts related to building systems.
