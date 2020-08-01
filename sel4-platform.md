@@ -8,12 +8,6 @@ While very powerful, this flexibility can make it difficult to design systems as
 The seL4 Platform provides a much simpler and constrained set of abstractions that can be used for building certain types of systems.
 A goal of providing this set of abstractions is to enable better software reuse when building systems, by enabling the creation of software components that can interact in a predictable manner.
 
-
-**NOTE**: In the current drafting concepts and abstractions may be referenced prior to their description.
-Please read through the entire document before providing a comment on any specific part.
-Apologies, hopefully I can come up with a better structure in the future to avoid this problem.
-
-
 ## Terminology
 
 As with any set of abstractions there are words that take on special meanings.
