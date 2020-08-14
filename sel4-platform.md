@@ -1,70 +1,136 @@
-# seL4 Platform
+# seL4 Core Platform
 
-seL4 Platform is an operating system personality for the seL4 microkernel.
+The seL4 Core Platform is an operating system (OS) personality for the seL4
+microkernel.
 
-The seL4 microkernel provides a highly-flexible and unconstrained set of mechanisms that can be used for building systems.
-While very powerful, this flexibility can make it difficult to design systems as there is a mismatch between seL4 concepts, and abstractions that are useful for building systems.
+## Purpose of the platform
 
-The seL4 Platform provides a much simpler and constrained set of abstractions that can be used for building certain types of systems.
-A goal of providing this set of abstractions is to enable better software reuse when building systems, by enabling the creation of software components that can interact in a predictable manner.
+* Provide a small and simple OS for a wide range of IoT, cyberphysical
+and other embedded use cases;
+* provide a reasonable degree of application portability appropriate
+for the targeted use cases;
+* make seL4-based systems easy to develop and deploy within the target areas;
+* provide well-defined hardware interfaces to ease porting of the
+Platform;
+* support a high degree of code reuse between deployments;
+* provide well-defined internal interfaces to support diverse
+  implementations of the same logical service to adapt to
+usage-specific trade-offs and ease compatibility between
+implementation of system services from different developers;
+* have an architecture that leverages seL4's strong isolation
+properties to support a near-minimal *trusted computing base* (TCB);
+* be, in principle, amenable to formal analysis of system safety and
+  security properties (although such analysis is beyond the initial scope).
+
+## Rationale
+
+The seL4 microkernel provides a set of powerful and flexible
+mechanisms that can be used for building almost arbitrary systems.
+While minimising constraints on the nature of system designs and scope
+of deployments, this flexibility makes it challenging to design the
+best system for a particular use case, requiring extensive seL4 experience
+from developers.
+
+The seL4 Core Platform addresses this challenge by constraining the
+system architecture and to one that provides enough features and power
+for this usage class, enabling a much simpler set of developer-visible
+abstractions.
 
 ## Terminology
 
 As with any set of abstractions there are words that take on special meanings.
-This document attempts to clearly describe all of these terms, however as the concepts and abstractions are inter-related it is sometimes necessary to use a term prior to its formal introduction.
+This document attempts to clearly describe all of these terms, however
+as the concepts and abstractions are inter-related it is sometimes
+necessary to use a term prior to its formal introduction.
+
 Following is a list of the terms introduced in this document.
 
-* core
+* processor core (core)
 * protection domain (PD)
 * communication channel (CC)
 * memory region
 * notification
-* protection procedure call (PPC)
+* protected procedure call (PPC)
 
+As these abstractions are built on seL4 abstractions, their
+explanations need to refer to the seL4 terms (in *italics*). This will help readers
+familiar with the seL4 abstractions to understand the
+correspondence. However, the intention of this document is that it can
+be mostly understood without a knowledge of the underlying seL4
+abstractions, so the reader with little seL4 background can safely
+skip references to underlying seL4 constructs.
+
+However, the [seL4 Whitepaper](https://sel4.systems/About/seL4-whitepaper.pdf) is recommended background information for
+this document.
 
 ## Abstractions
 
 ### Core
 
-seL4 Platform is designed to run on multi-core systems.
+The seL4 Core Platform is designed to run on multi-core systems.
 
-A multi-core processor is one in which there are multiple identical processing cores sharing the same L2 cache with uniform memory access.
-Such a processor is usually limited to eight cores at most.
+For the purpose of this document,
+a multi-core processor is one in which there are multiple identical
+processor cores (cores) sharing the same L2 cache with uniform memory access.
+Such a processor is usually limited to no more than eight cores.
 
-seL4 platform is not designed for massively multi-core systems, nor systems with non-uniform memory access (NUMA).
+The seL4 Core Platform is not designed for massively multi-core
+systems, nor systems with non-uniform memory access (NUMA).
+
+**Rationale**
+
+> In large multicore processors many design trade-offs change, trying
+> to support them would introduce unwarranted complexity into the
+> platform, as such processors are presently uncommon in the target domains.
 
 ### Protection Domain
 
 A **protection domain** (PD) is the fundamental runtime abstraction in the seL4 platform.
 It is analogous, but very different in detail, to a process on a UNIX system.
 
-A PD provides a thread-of-control that executes within a fixed seL4 virtual memory space, with a fixed set of seL4 capabilities that enable access to a limited set of seL4 managed resources.
+A PD provides a thread of control that executes within a fixed seL4
+*virtual address space*, with a fixed set of seL4 *capabilities* that enable access to a limited set of seL4-managed resources.
 
-The PD operates at a fixed seL4 priority level.
-Each PD has an associated seL4 scheduling context.
+The PD operates at a fixed seL4 *priority* level.
+Each PD has an associated seL4 *scheduling context*.
 The seL4 scheduling objects controls which core the protection domain normally executes on.
 
-When an seL4 Platform system is booted all protection domains in the system execute an *initialisation* procedure.
+When an seL4 Core Platform system is booted, all protection domains in the system execute an *initialisation* procedure.
 The initialisation procedure runs using the PD's seL4 scheduling object.
 
-After the initialisation procedure is complete the protection domain's *notification* procedure will be invoked whenever the protection domain receives a notification.
-The notification procedure also runs using the PD's seL4 scheduling object.
-The scheduling procedure will not run at the same time as the initialisation procedure, and will never be called in parallel (i.e. there is only a single instance of the notification procedure running at any point in time).
+After the initialisation procedure is complete, the protection domain's *notification* procedure will be invoked whenever the protection domain receives a *notification*.
+The notification procedure also runs using the PD's seL4 scheduling context.
+The notification procedure will not run at the same time as the initialisation procedure, and will never be called in parallel (i.e. there is only a single instance of the notification procedure running at any point in time).
 
-In addition to the initialisation and notification procedures a protection domain *may* provide a *protected* procedure.
-The *protected* procedure is one that can be call from a different protection domain.
-When the protected procedure is called it shall runs at the PD's priority, but will use the **callers** seL4 scheduling object.
+In addition to the initialisation and notification procedures a
+protection domain *optionally* provide a *protected* procedure.
+The *protected* procedure is one that can be called from a different protection domain.
+When the protected procedure is called, it executes at the PD's
+priority, but will use the **callers** seL4 scheduling object, and
+therefore on the caller's core.
 A consequence of this is that the protected procedure may run on a different core to that on which the initialisation and notification procedures run.
-The protected procedure will not run in parallel with either the initialisation or the notification procedures.
+The protected procedure will not run in parallel with either the
+initialisation or the notification procedures, so there is no need for
+concurrency control within a PD.
 
 There is a small set of seL4 platform APIs that a protection domain may make use of (from any type of procedure).
 These are:
 
 * call a protected procedure in a different protection domain
-* send a notification to a different protection domain
+* send a notification to a different protection domain.
 
-These calls only possible in the case where a communication channel is established with the other protection domain.
+These calls are only possible in the case where a *communication
+channel* is established between the PDs.
 
+**Rationale**
+
+> PDs are single-threaded to keep the programming model and
+> implementations simple, and because this serves the needs of most
+> present use cases in the target domains. Extending the model to
+> multithreaded applications (clients) is straightforward and an be
+> done if needed. Extending to multithreaded services is possible but
+> requires additional infrastructure for which we see no need in the
+> near future.
 
 ### Memory regions
 
