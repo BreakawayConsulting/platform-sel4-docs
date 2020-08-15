@@ -1,9 +1,11 @@
-# seL4 Core Platform
+% The seL4 Core Platform
+% Benno, Gernot
+% Draft of \today
 
 The seL4 Core Platform is an operating system (OS) personality for the seL4
 microkernel.
 
-## Purpose of the platform
+# Purpose of the platform
 
 * Provide a small and simple OS for a wide range of IoT, cyberphysical
 and other embedded use cases;
@@ -22,7 +24,7 @@ properties to support a near-minimal *trusted computing base* (TCB);
 * be, in principle, amenable to formal analysis of system safety and
   security properties (although such analysis is beyond the initial scope).
 
-## Rationale
+# Rationale
 
 The seL4 microkernel provides a set of powerful and flexible
 mechanisms that can be used for building almost arbitrary systems.
@@ -36,7 +38,7 @@ system architecture and to one that provides enough features and power
 for this usage class, enabling a much simpler set of developer-visible
 abstractions.
 
-## Terminology
+# Terminology
 
 As with any set of abstractions there are words that take on special meanings.
 This document attempts to clearly describe all of these terms, however
@@ -63,9 +65,9 @@ skip references to underlying seL4 constructs.
 However, the [seL4 Whitepaper](https://sel4.systems/About/seL4-whitepaper.pdf) is recommended background information for
 this document.
 
-## Abstractions
+# Abstractions
 
-### Core
+## Core
 
 The seL4 Core Platform is designed to run on multi-core systems.
 
@@ -83,7 +85,7 @@ systems, nor systems with non-uniform memory access (NUMA).
 > to support them would introduce unwarranted complexity into the
 > platform, as such processors are presently uncommon in the target domains.
 
-### Protection Domain
+## Protection Domain
 
 A **protection domain** (PD) is the fundamental runtime abstraction in the seL4 platform.
 It is analogous, but very different in detail, to a process on a UNIX system.
@@ -132,7 +134,7 @@ channel* is established between the PDs.
 > requires additional infrastructure for which we see no need in the
 > near future.
 
-### Memory regions
+## Memory regions
 
 A memory region is a range of physical memory.
 A memory region must be at least page size.
@@ -156,7 +158,7 @@ An attached communication channel enables memory pointers to objects within the 
 Normally, a memory region that is attached to a communication channel would also be mapping into both protection domains, however there are some cases in which a memory region is attached to the communication channel *without* also being mapping into both protection domains.
 
 
-### Communication Channels
+## Communication Channels
 
 Protection domains can communicate (for both control and data exchange purposes) via *communication channels*.
 
@@ -173,7 +175,7 @@ A communication channel between two PDs provides the following:
 The communication relationships between protection domains can be expressed as a non-directed cyclic graph.
 
 
-#### Protected Procedure
+### Protected Procedure
 
 A protected procedure call (PPC) enables a *caller* protection domain to call a *protected procedure* residing in the *callee* protection domain.
 
@@ -208,7 +210,7 @@ The following section describes how memory is shared between protection domains 
 The callee is provided with the (non-forgable) identify of the caller protection domain.
 The server protection domain must use the caller identity to perform any appropriate access control.
 
-#### Shared Memory
+### Shared Memory
 
 A communication channel between two protection domains includes a single region of shared memory.
 The memory is shared a read-write (no-execute) permission in both protection domains.
@@ -227,7 +229,7 @@ The format of the shared memory is not (currently) defined.
 It is expected as this platform specification evolves at least some areas of the shared memory region will be specified.
 
 
-#### Notifications
+### Notifications
 
 A notification is a way that one PD can indicate (to the other PD) that there is work to be done.
 
@@ -239,9 +241,9 @@ On receiving a notification the PD examines the shared memory to identify the wo
 The exact format of the shared memory region is not currently defined.
 
 
-## Runtime API
+# Runtime API
 
-### Types
+## Types
 
 `Channel` is an opaque reference to a specific channel.
 This type is used extensively through-out the functional API.
@@ -249,21 +251,21 @@ This type is used extensively through-out the functional API.
 `Memptr` is an opaque reference to a pointer.
 Memptr can be decoded into specific pointers.
 
-### Entry Points
+## Entry Points
 
-#### `void init(void)`
+### `void init(void)`
 
 Every protection must expose an init function.
 This is called by the system when the protection domain is created.
 The `init` function executes using the protection domain's scheduling context.
 
-#### `void notified(Channel channel)`
+### `void notified(Channel channel)`
 
 The `notified` entry point is called by the system when the protection domain has received a notification via a communication channel.
 A channel identifier is passed to the function indicating which specific channel was notified.
 
 
-#### `void protected(Channel channel)`
+### `void protected(Channel channel)`
 
 The `protected` entry point is optional.
 The `protected` entry point is called by the system when another PD makes a protected call to the PD via a channel.
@@ -275,28 +277,28 @@ Any return values should be set via **FIXME**.
 When the `protected` entry point returns, the protected procedure call completes.
 
 
-### Functions
+## Functions
 
-#### `void notify(Channel channel)`
+### `void notify(Channel channel)`
 
 Send a notification to a specific channel.
 
-#### `void ppcall(Channel channel)`
+### `void ppcall(Channel channel)`
 
 Perform a protected-procedure call to a specified channel.
 Any parameters should be set via **FIXME**.
 
-#### `Memptr memptr_encode(Channel channel, ....)`
+### `Memptr memptr_encode(Channel channel, ....)`
 
 Encode a pointer to a memory address.
 
-#### `void * memptr_decode(Channel channel, Memptr memptr)`
+### `void * memptr_decode(Channel channel, Memptr memptr)`
 
 Decode the `memptr` to a pointer.
 
 **FIXME:** If this is a bad ptr, how is that handled? Return null or exception?
 
-#### `Dmaptr memptr_decode(Channel channel, Memptr memptr)`
+### `Dmaptr memptr_decode(Channel channel, Memptr memptr)`
 
 Decode the `memptr` to a DMA address
 This is used to convert `memptr` to values that can be used by bus masters.
@@ -304,24 +306,24 @@ This is used to convert `memptr` to values that can be used by bus masters.
 **FIXME:** Handling of bad ptrs, also likely need a DMA context of some description for cases when there is I/O MMU.
 
 
-#### `Memptr memptr_transcode(Channel from_channel, Memptr memptr, Channel to_channel)`
+### `Memptr memptr_transcode(Channel from_channel, Memptr memptr, Channel to_channel)`
 
 Directly decode/encode a `memptr` associated with `from_channel` to a memptr associated with `to_channel`.
 
-#### Setting IPC buffers
+### Setting IPC buffers
 
 **FIXME**: Need to have APIs for setting the IPC buffer.
 
-#### Cache operations
+### Cache operations
 
 **FIXME**: Need to have APIs for performing cache flushes, etc.
 
 
-## System construction concepts
+# System construction concepts
 
 This section introduces some other concepts related to building systems.
 
-### Trust
+## Trust
 
 Trust is a multi-faceted concept that can have many areas of nuance.
 A pure seL4 system allows for the construction of systems with complex trust relationships.
@@ -342,12 +344,12 @@ An important part of system construction is that these trust relationships must 
 Forcing the system designer to explicitly label the trust relationships between protection domains allows for static analysis (for example, that a PD does not make a PPC to a protection domain that it does not trust).
 
 
-### Static system
+## Static system
 
 A static system is one where the protection domains that make up the system are defined at system build time.
 A static system may be composed of dynamic protection domains! (Although in most cases, most protection domains would be static).
 
-### Dynamic system
+## Dynamic system
 
 A dynamic system has one (or potentially more) protection domains which are capable of creating new protection domains at run-time, and of managing the cspace of other protection domains.
 
@@ -355,10 +357,10 @@ A dynamic system may be composed of both static and dynamic protection domains.
 
 
 
-## Implementation
+# Implementation
 
 
-### Protected procedure calls
+## Protected procedure calls
 
 The PPC mechanism abstracts over seL4 IPC.
 

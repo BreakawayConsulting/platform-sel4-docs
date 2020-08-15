@@ -1,0 +1,6 @@
+standalone:	true
+variables:
+  documentclass: 	article
+  classoption:
+   - english
+   - 12pt

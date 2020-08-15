@@ -1,14 +1,28 @@
+### Configure options
 NAME=sel4-platform
 Md2Pdf	   = pandoc
+Md2Tex     = pandoc --biblatex 
+LaTeX      = pdflatex -interaction=nonstopmode
+
+### Macros
+GEN=generated
+ROOT=root
 
 .PHONY: all
+.SECONDARY: $(NAME).tex
 
-all:	$(NAME).pdf
+all:	$(NAME).pdf #nice.pdf
 
-%.pdf:	%.md
-	$(Md2Pdf) $< -o $@
+%.tex:	%.md Makefile defaults.yaml
+	$(Md2Tex) $< -o - -d defaults.yaml -t latex | \
+	sed 's/usepackage{lmodern}/usepackage{sel4}/' > $@
+
+%.pdf:	%.tex
+	$(LaTeX) $<
+	$(LaTeX) $<
 
 clean:
+	rm -f $(GEN).* *.log *.aux *.out *.bcf *.xml *.tex
 
 realclean:	clean
-	rm $(NAME).pdf
+	rm -f *.pdf
