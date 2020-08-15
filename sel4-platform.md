@@ -5,9 +5,10 @@
 The seL4 Core Platform is an operating system (OS)
 personality for the seL4 microkernel.
 
-# Purpose of the platform
+# Purpose
 
-* Provide a small and simple OS for a wide range of IoT, cyberphysical
+The seL4 Core Platform is to:
+* provide a small and simple OS for a wide range of IoT, cyberphysical
 and other embedded use cases;
 * provide a reasonable degree of application portability appropriate
 for the targeted use cases;
@@ -19,8 +20,9 @@ Platform;
   implementations of the same logical service to adapt to
 usage-specific trade-offs and ease compatibility between
 implementation of system services from different developers;
-* have an architecture that leverages seL4's strong isolation
+* leverages seL4's strong isolation
 properties to support a near-minimal *trusted computing base* (TCB);
+* retain seL4's trademark performance for systems built with it;
 * be, in principle, amenable to formal analysis of system safety and
   security properties (although such analysis is beyond the initial scope).
 
@@ -67,7 +69,7 @@ this document.
 
 # Abstractions
 
-## Core
+## Processor Core
 
 The seL4 Core Platform is designed to run on multi-core systems.
 
@@ -133,6 +135,12 @@ channel* is established between the PDs.
 > done if needed. Extending to multithreaded services is possible but
 > requires additional infrastructure for which we see no need in the
 > near future.
+
+---
+
+**End of Gernot's revisions**
+
+---
 
 ## Memory regions
 
