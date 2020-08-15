@@ -1,9 +1,9 @@
-% The seL4 Core Platform
+% The seL4^\textregistered^\ Core Platform
 % Benno, Gernot
 % Draft of \today
 
-The seL4 Core Platform is an operating system (OS) personality for the seL4
-microkernel.
+The seL4 Core Platform is an operating system (OS)
+personality for the seL4 microkernel.
 
 # Purpose of the platform
 
