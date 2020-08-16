@@ -150,6 +150,8 @@ The mapping has a number of attributes, which include:
 * caching attributes (mostly relevant for device memory)
 * permissions (full access, R/O, X/O).
 
+**FIXME: The VA be better also aligned to the region's size.**
+
 A memory region may be mapped into multiple PDs; the mapping addresses
 for each PD may be different. A memory region can also be mapped
 multiple times into the same PD (for example, with different caching
@@ -170,7 +172,8 @@ channel in this case.**
 
 Protection domains can communicate (exchanging data, control or both)
 via *communication channels*. Each channel connects exactly two PDs;
-there are no multi-party channels.
+there are no multi-party channels. Each pair of PDs can have at most
+one communication channel.
 
 Communication through channels may be uni- or bi-directional in terms of data, but is
 always bi-directional in terms of information flow -- channels cannot
@@ -181,85 +184,180 @@ Communication between two PDs does in general **not** imply a specific trust rel
 A communication channel between two PDs provides the following:
 
 * Ability for each PD to *notify* the other PD.
-* Ability to reference a memory region associated with the communication channel.
-* Ability for one PD to make protected procedure calls (PPCs) to the
-  other PD. A PPC channel is directed: it has a *client* which can invoke
-  a PPC to a *server*. This form of channel *does* imply a trust
-  relationship: the client trusts the server.
+* Ability to *reference a memory region* associated with the communication channel.
+* Ability for one PD (the client) to make *protected procedure calls* (PPCs) to the
+other PD (the server).
+
+A PPC channel is directed: it has a *caller PD* which can invoke
+  a PPC to a *callee PD*. This form of channel *does* imply a trust
+  relationship: the caller trusts the callee.
 
 The overall communication relationships between protection domains can be expressed as a non-directed, cyclic graph.
 
+
+### Protected Procedure Calls
+
+A protected procedure call (PPC) enables the caller PD to invoke a
+*protected procedure* residing in the callee PD. This is
+uni-directional, the roles of caller and callee cannot be reversed.
+The caller PD must trust the callee PD.
+
+A PD can have at most one protected procedure. Arguments ("opcode") passed through the
+call can be used to choose from different functionalities the callee
+may provide, according to a callee-defined protocol.
+
+The seL4 Core Platform provides a *static architecture*, where all PDs
+are determined at system build time. In such a system, the PPC call
+graph can be statically determined, which supports determining certain
+security and safety properties by static analysis.
+
+The PPC in the system form a directed, acyclic graph, i.e. they
+*cannot contain loops*.
+
+**FIXME: THe following discussion seems redundant, as the pio
+assignment rule already guarantees all relevant properties.**
+I.e.: It is not valid that have PD *A* calling PD *B*, which in turns calls PD *A*.
+It is an error to construct a system that contains loop (such an error should be determined at construction time in a static system; in a dynamic system managers must ensure changes to the system do not introduce loops).
+
+It is allowed for a protected procedure to make a PPC as long as it does not cause a loop.
+For example, PD *A* can call PD *B*, which in turn calls PD *C* as
+part of protected procedure.
+**END FIXME**
+
+The callee of a PPC must have a strictly higher priority than the
+caller. This property is statically enforceable from the acyclic call
+graph, and build tool should enforce this property.
+
+**RATIONALE**
+
+> This rule of only calling to higher priority prevents deadlocks and
+> reflects the notion that the callee operates on behalf of the
+> caller, and it should not be possible to preempt execution of the
+> callee unless the caller could be preempted as well. This greatly
+> simplifies reasoning about real-time properties in the system; in
+> particular, it means that PPCs can be used to implement *resource
+> servers*, where shared resources are encapsulated in a component
+> that ensures mutual exclusion, while avoiding unbounded priority
+> inversions through the *immediate priority ceiling protocol*.
+
+> While it would be possible to achieve the same by allowing PPCs
+> between PDs of the same priority, this would be much harder to
+> statically analyse for loop-freedom (and thus deadlock-freedom). The
+> drawback is that we waste a part of the priority space where a
+> logical entity is split into multiple PDs, eg to separate out a
+> particularly critical component to formally verify it, when the
+> complete entity would be too complex for formal verification. For
+> the kinds of systems targeted by the seL4 Core Platform, this
+> reduction of the usable priority space is unlikely to cause problems.
+
+The protected procedure implementation in the callee PD *must not
+block*, ie it must execute on behalf of the caller at all times.
+Ideally, this property should be enforced by the platform's build/analysis
+tools.
+
+**Note**
+
+> Once the platform is extended to support concurrent (multicore)
+> callee PDs, this will support concurrently serving one callee per
+> core.
+
+A PD providing a potentially long-running service, eg. a file system,
+will require a protocol that returns to the caller without blocking,
+with an indication that the operation is not complete, and use a
+notification-based protocol to inform the callee when it is
+time to retry the operation.
+
+PPC arguments are passed by-value (i.e. copied) and are limited to 64 machine words. **FIXME:
+This is too high, it could be 512B, which is more than seL4 supports
+(I think) and certainly more than should ever be used. 64B seems more appropriate.**
+Bulk data transfer must use a by-reference mechanism using shared
+memory (see below).
+
+**RATIONALE**
+
+> This limitation on the size of by-value arguments is forced by the
+> (architecture-dependent) limits on the payload size of the
+> underlying seL4 operations, as well as by efficiency
+> considerations. Similar limitations exist in the C ABIs of various
+> platforms.
+
+The seL4 Core Platform provides the callee with the (non-forgeable)
+identify of the caller PD. The callee may use this to associate client
+state with the caller (e.g. for long-running operations) and enforce
+access control.
+
+**NOTE**
+
+> The caller identity is provided through seL4 *badged endpoint
+> capabilities*, the seL4 Core Platform will provide each client with
+> a different badged capability for the servers's endpoint.
+
+**FIXME: Client/server pops up here for the first time, before we were
+only talking about caller/callee. I think we should introduce this
+terminology earlier.**
+
+### Shared Memory
+
+A communication channel may have an attached shared memory region.
+The memory accessible read-write (but not executable) by both
+protection domains sharing the channel.
+
+**FIXME: I'm still not sure whether shared memory is necessarily
+attached to a channel. Obviously, any shared memory constitutes a
+channel, and if we want to have only one channel per PD pair, then
+there can only be channel-associated mapped regions. [gernot]**
+
+The region size can be an arbitrary number of pages, but must be
+mapped into contiguous virtual memory. **FIXME Above we said it was a
+power of two. The continuous virtual mapping is already implied above
+by defining a memory region as contiguous in PM and mappable at a
+particular VMA**
+The virtual memory region need not be the same in each PD.
+[Note: we may want to restrict to power-of-two to allow fast offset verification.]
+
+In the case of PPC the server PD maintains a mapping from callee
+identity (badge) to the virtual memory. **FIXME: Not sure what this
+means. [Gernot]**
+
+A PPC must *never* pass virtual-memory addresses directly, they must
+be converted to offsets into the channel-attached memory region.
+[Note: There are possibly neat implementation tricks to make this fast especially is the region is sufficiently aligned].
+
+**Note: The seL4 Core Platform does not presently impose a structure
+on a channel-attached memory region. We expect that future versions of
+the specification will specify semantics for part of the shared region (headers).**
+
+
+### Notifications
+
+A notification is a semaphore-like synchronisation mechanism. A PD can
+signal another PD's notification to indicate availability of data in
+channel-associated memory. The notification transfers the signalling
+PD's unforgeable identity. There is no payload associated with a
+notification.
+
+**NOTE: Details of the notification protocol are not presently defined
+by the seL4 Core Platform.**
+
+Depending on the assignment of priorities and cores to PDs, a PD's
+notification may be signalled multiple times (bu different clients)
+before the PD can start processing them. The receiving PD can identify
+the different clients and process all requests. However, if a client
+signals the same PD multiple times before that PD gets to process the
+notification, it will only receive it once (it behaves as a binary
+semaphore).
+
+**Note: The number of unique notifiers per PD is limited by the number
+of bits in a machine word. This is expected to be sufficient for the
+target application domains of the seL4 Core Platform. Should the
+number of notifiers exceed this limit, a more complex protocol will
+need to be specified that allows disambiguating a larger number of notifiers.**
 
 ------
 
 **End of Gernot's revisions**
 
 ------
-
-### Protected Procedure
-
-A protected procedure call (PPC) enables a *caller* protection domain to call a *protected procedure* residing in the *callee* protection domain.
-
-The caller PD must trust the callee PD.
-
-*Note:* A PD can have at most one protected procedure.
-Different functionality can be dispatched based on the arguments passed to the protected procedure.
-
-In a static system the protected procedure call graph can be determined statically, which shall allow some form of static analysis of the system.
-
-The protected procedure call graph *must not contain loops*.
-I.e.: It is not valid that have PD *A* calling PD *B*, which in turns calls PD *A*.
-It is an error to construct a system that contains loop (such an error should be determined at construction time in a static system; in a dynamic system managers must ensure changes to the system do not introduce loops).
-
-It is allowed for a protected procedure to make a PPC as long as it does not cause a loop.
-For example, PD *A* can call PD *B*, which in turn calls PD *C* as part of protected procedure.
-
-A protected procedure call can only be made in cases where the callee PD has a priority equal to or higher than the caller PD.
-
-The protected procedure implementation in the callee PD *must not block*.
-Ideally, this should be analyzed and confirmed as part of the system build / analysis tools.
-An outcome of this is that, clearly, a callee PD is only servicing one callee at a time [assuming single core, on multi-core this is extended to one callee per core].
-
-It is expected that there may be different specific functionality implemented by a server protection domain.
-The arguments passed in the PPC to the protection domain must be used appropriately by the server protection domain to interpret the behaviour requested by the caller PD.
-
-The arguments passed in a PPC is limited to 64 machine words.
-This is not dissimilar to the limitation on the number/size of arguments that may be passed using the C ABI on any specific platform.
-There are not many services that can be provided where passing 64 machine words is sufficient or appropriate.
-The following section describes how memory is shared between protection domains for handling data transfer.
-
-The callee is provided with the (non-forgable) identify of the caller protection domain.
-The server protection domain must use the caller identity to perform any appropriate access control.
-
-### Shared Memory
-
-A communication channel between two protection domains includes a single region of shared memory.
-The memory is shared a read-write (no-execute) permission in both protection domains.
-
-The region size can be an arbitrary number of pages, but must be mapped into contiguous virtual memory.
-The virtual memory region need not be the same in each PD.
-[Note: we may want to restrict to power-of-two to allow fast offset verification.]
-
-In the case of PPC the server PD maintains a mapping from callee identity (badge) to the virtual memory.
-
-Raw pointers are *never* passed as arguments (or return values) of the PPC.
-Instead offset into the shared memory region is passed.
-[Note: There are possibly neat implementation tricks to make this fast especially is the region is sufficiently aligned].
-
-The format of the shared memory is not (currently) defined.
-It is expected as this platform specification evolves at least some areas of the shared memory region will be specified.
-
-
-### Notifications
-
-A notification is a way that one PD can indicate (to the other PD) that there is work to be done.
-
-On receiving a notification a PD can identify which PD has provided the notification. [Note: An alternative is that a notification can identify a 'set' of PDs, which at least one has work todo. Need iff not enough bits in the badge.]
-
-A notification is *just* an interrupt and does not have a payload (above identifying to other PD).
-
-On receiving a notification the PD examines the shared memory to identify the work to do.
-The exact format of the shared memory region is not currently defined.
 
 
 # Runtime API
