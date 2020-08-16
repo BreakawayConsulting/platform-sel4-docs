@@ -14,7 +14,7 @@ ROOT=root
 all:	$(NAME).pdf #nice.pdf
 
 %.tex:	%.md Makefile defaults.yaml
-	$(Md2Tex) $< -o - -d defaults.yaml -t latex | \
+	$(Md2Tex) $< -o - -d defaults.yaml -t latex -N | \
 	sed 's/usepackage{lmodern}/usepackage{sel4}/' > $@
 
 %.pdf:	%.tex

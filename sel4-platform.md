@@ -8,6 +8,7 @@ personality for the seL4 microkernel.
 # Purpose
 
 The seL4 Core Platform is to:
+
 * provide a small and simple OS for a wide range of IoT, cyberphysical
 and other embedded use cases;
 * provide a reasonable degree of application portability appropriate
@@ -228,7 +229,7 @@ The callee of a PPC must have a strictly higher priority than the
 caller. This property is statically enforceable from the acyclic call
 graph, and build tool should enforce this property.
 
-**RATIONALE**
+**Rationale**
 
 > This rule of only calling to higher priority prevents deadlocks and
 > reflects the notion that the callee operates on behalf of the
@@ -273,7 +274,7 @@ This is too high, it could be 512B, which is more than seL4 supports
 Bulk data transfer must use a by-reference mechanism using shared
 memory (see below).
 
-**RATIONALE**
+**Rationale**
 
 > This limitation on the size of by-value arguments is forced by the
 > (architecture-dependent) limits on the payload size of the
@@ -286,7 +287,7 @@ identify of the caller PD. The callee may use this to associate client
 state with the caller (e.g. for long-running operations) and enforce
 access control.
 
-**NOTE**
+**Note**
 
 > The caller identity is provided through seL4 *badged endpoint
 > capabilities*, the seL4 Core Platform will provide each client with
@@ -323,9 +324,11 @@ A PPC must *never* pass virtual-memory addresses directly, they must
 be converted to offsets into the channel-attached memory region.
 [Note: There are possibly neat implementation tricks to make this fast especially is the region is sufficiently aligned].
 
-**Note: The seL4 Core Platform does not presently impose a structure
-on a channel-attached memory region. We expect that future versions of
-the specification will specify semantics for part of the shared region (headers).**
+**Note**
+
+> The seL4 Core Platform does not presently impose a structure
+> on a channel-attached memory region. We expect that future versions of
+> the specification will specify semantics for part of the shared region (headers).
 
 
 ### Notifications
@@ -336,8 +339,10 @@ channel-associated memory. The notification transfers the signalling
 PD's unforgeable identity. There is no payload associated with a
 notification.
 
-**NOTE: Details of the notification protocol are not presently defined
-by the seL4 Core Platform.**
+**Note**
+
+> Details of the notification protocol are not presently defined
+> by the seL4 Core Platform.
 
 Depending on the assignment of priorities and cores to PDs, a PD's
 notification may be signalled multiple times (bu different clients)
@@ -347,11 +352,15 @@ signals the same PD multiple times before that PD gets to process the
 notification, it will only receive it once (it behaves as a binary
 semaphore).
 
-**Note: The number of unique notifiers per PD is limited by the number
-of bits in a machine word. This is expected to be sufficient for the
-target application domains of the seL4 Core Platform. Should the
-number of notifiers exceed this limit, a more complex protocol will
-need to be specified that allows disambiguating a larger number of notifiers.**
+**Note**
+
+> The number of unique notifiers per PD is limited to the number
+> of bits in a machine word by the underlying seL4 Notification
+> mechanism.
+> This is expected to be sufficient for the
+> target application domains of the seL4 Core Platform. Should the
+> number of notifiers exceed this limit, a more complex protocol will
+> need to be specified that allows disambiguating a larger number of notifiers.**
 
 ------
 
