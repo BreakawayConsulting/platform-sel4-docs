@@ -136,52 +136,65 @@ channel* is established between the PDs.
 > requires additional infrastructure for which we see no need in the
 > near future.
 
----
-
-**End of Gernot's revisions**
-
----
-
 ## Memory regions
 
-A memory region is a range of physical memory.
+A memory region is a contiguous range of physical memory.
 A memory region must be at least page size.
-The size of a memory region my by a power-of-2.
-The base address of a memory region must be aligned to its size.
+The size of a memory region must be a power-of-2 multiple of the base
+page size (4KiB) and the region must be aligned to its size.
 
-Each memory region can be mapped into a protection domain.
-The mapping attributes include:
+A memory region may be mapped into a protection domain.
+The mapping has a number of attributes, which include:
 
-* virtual address space
-* caching attributes
-* permissions attributes
+* the virtual address at which the region is mapped in the PD
+* caching attributes (mostly relevant for device memory)
+* permissions (full access, R/O, X/O).
 
-It is valid that a memory region may be mapped into a protection domain multiple times (for example, with different caching attributes).
+A memory region may be mapped into multiple PDs; the mapping addresses
+for each PD may be different. A memory region can also be mapped
+multiple times into the same PD (for example, with different caching
+attributes), the address of such multiple mappings must be different.
 
-A memory region can be mapped into multiple different protection domains.
-The virtual address can be different in each protection domain.
-
-In addition to mapping a memory region into a protection domain, a memory region may also be *attached* to a communication channel.
-An attached communication channel enables memory pointers to objects within the memory region to be safely shared between protection domains.
-Normally, a memory region that is attached to a communication channel would also be mapping into both protection domains, however there are some cases in which a memory region is attached to the communication channel *without* also being mapping into both protection domains.
+A memory region may also be *attached* to a communication channel (see
+below),
+irrespective of whether the region is mapped into any PD or not. Such
+an attachment supports transmission of data structures with memory
+pointers.
+**FIXME: I would assume this only works if the region is also mapped
+to both PDs and it's mapped at the same address in those PDs. However,
+I don't understand what it means for the region to be attached to a
+channel in this case.**
 
 
 ## Communication Channels
 
-Protection domains can communicate (for both control and data exchange purposes) via *communication channels*.
+Protection domains can communicate (exchanging data, control or both)
+via *communication channels*. Each channel connects exactly two PDs;
+there are no multi-party channels.
 
-Communication is always considered to be two-way from an information flow point of view; there is no concept of one-way communication between protection domains.
+Communication through channels may be uni- or bi-directional in terms of data, but is
+always bi-directional in terms of information flow -- channels cannot
+prevent information flowing both ways.
 
-Communication between two PDs does **not** necessarily imply a specific trust relationship between the two PDs.
+Communication between two PDs does in general **not** imply a specific trust relationship between the two PDs.
 
 A communication channel between two PDs provides the following:
 
-* Ability for each PD to notify the other PD.
-* Ability to reference memory regions associated with the communication channel.
-* Ability for one PD to make protected procedure calls to the other PD [note: this is optional, and *does* imply a trust relationship].
+* Ability for each PD to *notify* the other PD.
+* Ability to reference a memory region associated with the communication channel.
+* Ability for one PD to make protected procedure calls (PPCs) to the
+  other PD. A PPC channel is directed: it has a *client* which can invoke
+  a PPC to a *server*. This form of channel *does* imply a trust
+  relationship: the client trusts the server.
 
-The communication relationships between protection domains can be expressed as a non-directed cyclic graph.
+The overall communication relationships between protection domains can be expressed as a non-directed, cyclic graph.
 
+
+------
+
+**End of Gernot's revisions**
+
+------
 
 ### Protected Procedure
 
