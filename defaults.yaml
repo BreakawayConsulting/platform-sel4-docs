@@ -4,3 +4,4 @@ variables:
   classoption:
    - english
    - 12pt
+  fontfamily: sel4
