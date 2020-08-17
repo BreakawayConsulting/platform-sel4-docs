@@ -448,12 +448,6 @@ Directly decode/encode a `memptr` associated with `from_channel` to a memptr ass
 **FIXME**: Need to have APIs for performing cache flushes, etc.
 
 
-------
-
-**End of Gernot's revisions**
-
-------
-
 # System construction concepts
 
 This section introduces some other concepts related to building systems.
@@ -462,49 +456,95 @@ This section introduces some other concepts related to building systems.
 
 Trust is a multi-faceted concept that can have many areas of nuance.
 A pure seL4 system allows for the construction of systems with complex trust relationships.
+Such complex trust relationships make (formal or
+informal) reasoning about security properties of the system
+challenging and error-prone.
 
-For the seL4 platform it is recognized that a set of complex trust relationships leads to difficulties in understanding (from a human or machine point of view) the overall security posture of the system.
-For this reason within an seL4 Platform system trust *between protection domains* is limited to a binary relationship.
-A given protection domain may either trust or not trust another protection domain.
-The trust relationship is one-way only.
-To say that PD **A** trusts PD **B** does not imply that PD **B** trusts PD **A**.
+The seL4 Core Platform simplifies trust into a binary relationship
+*between protection domains*:
+A given protection domain may either trust or not trust another PD.
+The trust relation is not symmetric: PD **A** trusts PD **B** does not imply that PD **B** trusts PD **A**.
 
-Although limited in full expression this still provides a richer description of trusted than simply labelling protection domains as *trusted* and *untrusted* overall.
+Although much simplified compared to the generality of seL4, this
+approach still supports a more nuanced model of trust than simply
+labelling protection domains as *trusted* and *untrusted*: trust is
+relative rather than absolute.
 
 The default state of any trust relationship is *does not trust*.
 For a given system a directed graph can be used to express the trust relationships of the protection domains.
 
-An important part of system construction is that these trust relationships must be made explicit by the system designer.
-
-Forcing the system designer to explicitly label the trust relationships between protection domains allows for static analysis (for example, that a PD does not make a PPC to a protection domain that it does not trust).
+For reasoning about a system's security properties it is important
+that the trust relation is made explicit by the system designer. This
+enables static analysis of trust, for example to ensure that no PD
+performs a PPC on a PD it does not trust.
 
 
 ## Static system
 
-A static system is one where the protection domains that make up the system are defined at system build time.
-A static system may be composed of dynamic protection domains! (Although in most cases, most protection domains would be static).
+A static system is one where the protection domains that make up the
+system are defined at system build time. Note that
+a static system may be composed of dynamic protection
+domains. **FIXME: unclear what this means. I assume you mean that a PD
+may be created some time after sysinit, it can go away while the
+system continues to run, and it can be re-created. Correct?**
 
 ## Dynamic system
 
-A dynamic system has one (or potentially more) protection domains which are capable of creating new protection domains at run-time, and of managing the cspace of other protection domains.
+A dynamic system has one (or potentially more) protection domains
+which are capable of creating new protection domains at run-time, and
+of managing the seL4 *Cspace* of other protection domains.
 
-A dynamic system may be composed of both static and dynamic protection domains.
+A dynamic system may be composed of both static and dynamic protection
+domains. **FIXME: again, unclear.**
 
 
 
 # Implementation
 
+## Channels
+
+Each channel has an seL4 *badge* that uniquely identifies a caller PD to the
+callee. In other words, for each client of a particular PD there must
+be a different badge, although badges used by different callees are
+independent (i.e. badges are not system-wide unique).
+
+The badge identifies the channel's caller, irrespective of whether the
+caller invokes the callee's `notification` or `protected` entry
+point (if provided).
+
+The badge thus serves for the caller as a unique client ID, and can
+be used to tag per-client state.
+
+The seL4 Core Platform does not support more than one channel between
+any pair of PDs.
+
+This means that the maximum number of client a PD can have is
+determined by the dataword inside the seL4 badge (28 on 32-bit and 64
+on 64-bit architectures).
+
+## Notifications
+
+**The PD's SC is initially associated with its TCB for executing the
+`init` entry point. When that returns, the Platoform binds the SC to the PD's Notification.**
+
+**FIXME: If a PD offers a `protected` entry point, then its Notification must
+obviously be bound to the TCB. If the PD has no `protected` entry point, it
+doesn't have an endpoint either, so the TCB must directly receive from
+the Notification. I.e. the coding differes a bit between the two
+cases, although that is hidden inside the Platform.**
 
 ## Protected procedure calls
 
-The PPC mechanism abstracts over seL4 IPC.
+The PPC mechanism abstracts over seL4 IPC. A PD providing a
+`protected` entry point must have an seK4 endpoint to enable the
+control transfer, as well as an seL4 *passive TCB* (i.e. with no
+scheduling context attached).
 
-Specifically, a PPC call uses *seL4_CallWait* system call.
-The callers scheduling context is transferred to the callee.
-The callee performs all work on the scheduling context.
-If the scheduling context does not provide sufficient CPU resources, then [FIXME: detail needed here, can be an error, can require server to context switch the TCB back to waiting on something else.]
+To perform a PPC, the caller uses the *seL4_CallWait* system call, transferring 
+the caller's scheduling context to the callee.
+The callee executes on the caller's scheduling context until the return of the
+protected procedure.
 
-The server protection domain has a TCB (without a scheduling context?) waiting on an endpoint using **seL4_Wait** and/or **seL4_ReplyWait**.
+The callee PD's passive TCB waits on the PD's endpoint using **seL4_Wait** or **seL4_ReplyWait**.
 
-Badges are used to identify each caller.
-The maximum number of callers is limited by the badge address space.
+If the scheduling context does not provide sufficient *budget*, then [**FIXME: detail needed here, can be an error, can require server to context switch the TCB back to waiting on something else.**]
