@@ -362,12 +362,6 @@ semaphore).
 > number of notifiers exceed this limit, a more complex protocol will
 > need to be specified that allows disambiguating a larger number of notifiers.**
 
-------
-
-**End of Gernot's revisions**
-
-------
-
 
 # Runtime API
 
@@ -376,33 +370,40 @@ semaphore).
 `Channel` is an opaque reference to a specific channel.
 This type is used extensively through-out the functional API.
 
-`Memptr` is an opaque reference to a pointer.
+`Memptr` is an opaque reference to a pointer. **FIXME: Do you really
+mean reference to a pointer, or should this be an opaque reference to
+a memory location? And I assume it is tied to a memory object?**
 Memptr can be decoded into specific pointers.
 
 ## Entry Points
 
 ### `void init(void)`
 
-Every protection must expose an init function.
+Every protection domain must expose an `init` function.
 This is called by the system when the protection domain is created.
 The `init` function executes using the protection domain's scheduling context.
+**FIXME: Presumably it will be called exactly once? How does it terminate?**
 
 ### `void notified(Channel channel)`
 
 The `notified` entry point is called by the system when the protection domain has received a notification via a communication channel.
-A channel identifier is passed to the function indicating which specific channel was notified.
-
+A channel identifier is passed to the function indicating which channel was notified.
+**FIXME: More than one channel may have been notified. If so, I assume
+the entry point will be called multiple times, based on some priority
+convention (numerically largest bage)?**
 
 ### `void protected(Channel channel)`
 
 The `protected` entry point is optional.
-The `protected` entry point is called by the system when another PD makes a protected call to the PD via a channel.
+The `protected` entry point is called by the system when another PD
+makes a protected procedure call to the PD via a channel.
 The caller is identified via the `channel` parameter.
 
 The parameters passed by the caller may be accessed via **FIXME**.
 Any return values should be set via **FIXME**.
 
-When the `protected` entry point returns, the protected procedure call completes.
+When the `protected` entry point returns, the protected procedure call
+completes (i.e. control returns to the caller).
 
 
 ## Functions
@@ -428,7 +429,7 @@ Decode the `memptr` to a pointer.
 
 ### `Dmaptr memptr_decode(Channel channel, Memptr memptr)`
 
-Decode the `memptr` to a DMA address
+Decode the `memptr` to a DMA address.
 This is used to convert `memptr` to values that can be used by bus masters.
 
 **FIXME:** Handling of bad ptrs, also likely need a DMA context of some description for cases when there is I/O MMU.
@@ -446,6 +447,12 @@ Directly decode/encode a `memptr` associated with `from_channel` to a memptr ass
 
 **FIXME**: Need to have APIs for performing cache flushes, etc.
 
+
+------
+
+**End of Gernot's revisions**
+
+------
 
 # System construction concepts
 
