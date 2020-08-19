@@ -108,12 +108,21 @@
 \newcommand{\L@ogo}{\includegraphics[keepaspectratio=true,height=23mm]{\Logo@FileName}}
 \newcommand{\K@ey}{\includegraphics[keepaspectratio=true,width=1.04\paperwidth]{\Key@FileName}}
 
-\newcommand{\doCopyright}[1][\the\year]{
-  Copyright \copyright~#1 seL4 Project a Series of LF Projects, LLC.\\
-  Distributed under the
-  \href{https://creativecommons.org/licenses/by-sa/4.0/legalcode}{Creative
-    Commons Attribution-ShareAlike 4.0 International (CC~BY-SA~4.0) License.}\\
-  seL4 is a trademark of LF Projects, LLC.
+%%% Produces copyright notice as a pseudo footnote without a footnote mark
+% Use it right at the top. The optional argument is the year of the
+% copyright, it defaults to the current year.
+\newcommand{\doCopyright}[1][\the\year]{%
+  \let\s@makefnmark=\@makefnmark%
+  \def\@makefnmark{}%
+  \footnotetext{%
+    \hspace*{-1.8em}%    Magic number from article.cls/report.cls
+    Copyright \copyright~#1 seL4 Project a Series of LF Projects, LLC.\\
+    Distributed under the
+    \href{https://creativecommons.org/licenses/by-sa/4.0/legalcode}{Creative
+      Commons Attribution-ShareAlike 4.0 International (CC~BY-SA~4.0) License.}\\
+    seL4 is a trademark of LF Projects, LLC.
+  }
+  \let\@makefnmark=\s@makefnmark%
 }
 
 

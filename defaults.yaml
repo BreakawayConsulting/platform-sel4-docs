@@ -4,5 +4,5 @@ variables:
   classoption:
    - english
    - 12pt
-   - l4paper
+   - a4paper
   fontfamily: sel4

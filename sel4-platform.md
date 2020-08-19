@@ -1,6 +1,18 @@
 % The seL4^\textregistered^\ Core Platform
 % Benno, Gernot
 % Draft of \today
+<!--
+	Use the above to set title, author and date.
+	First use of seL4 must have registered trademark sign, as above.
+	Date is optional; if no date is given, author(s) is optional.
+-->
+
+\doCopyright[2020]
+<!--
+	Keep the above command at the top to produce the copyright note,
+	the argument is the copyright year; if omitted (incl brackets),
+	it defaults to the year of build.
+-->
 
 The *seL4 Core Platform* is an operating system (OS)
 personality for the seL4 microkernel.
@@ -548,3 +560,6 @@ protected procedure.
 The callee PD's passive TCB waits on the PD's endpoint using **seL4_Wait** or **seL4_ReplyWait**.
 
 If the scheduling context does not provide sufficient *budget*, then [**FIXME: detail needed here, can be an error, can require server to context switch the TCB back to waiting on something else.**]
+
+<!--  LocalWords:  PDs Cspace
+ -->
