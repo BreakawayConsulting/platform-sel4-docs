@@ -111,7 +111,7 @@ In addition to the initialisation and notification procedures a
 protection domain *optionally* provide a *protected* procedure.
 The *protected* procedure is one that can be called from a different protection domain.
 When the protected procedure is called, it executes at the PD's
-priority, but will use the **callers** seL4 scheduling object, and
+priority, but will use the **caller's** seL4 scheduling object, and
 therefore on the caller's core.
 A consequence of this is that the protected procedure may run on a different core to that on which the initialisation and notification procedures run.
 The protected procedure will not run in parallel with either the
@@ -156,11 +156,10 @@ The mapping has a number of attributes, which include:
 A memory region may be mapped into multiple PDs; the mapping addresses
 for each PD may be different. A memory region can also be mapped
 multiple times into the same PD (for example, with different caching
-attributes), the address of such multiple mappings must be different.
+attributes), the address of such multiple mappings must be different. **FIXME: a clarification why VA of multiple mappings must be different would be helpful here. An example would also be good. A scenario I can think of is [Read-Copy-Update](https://en.wikipedia.org/wiki/Read-copy-update) but unsure if it applies here**
 
 A memory region may also be *attached* to a communication channel (see
-below),
-irrespective of whether the region is mapped into any PD or not. Such
+below), irrespective of whether the region is mapped into any PD or not. Such
 an attachment supports transmission of data structures with memory
 pointers.
 **FIXME: I would assume this only works if the region is also mapped
@@ -176,9 +175,8 @@ via *communication channels*. Each channel connects exactly two PDs;
 there are no multi-party channels. Each pair of PDs can have at most
 one communication channel.
 
-Communication through channels may be uni- or bi-directional in terms of data, but is
-always bi-directional in terms of information flow -- channels cannot
-prevent information flowing both ways.
+Communication through channels may be uni- or bi-directional in terms of data, but is always bi-directional in terms of information flow -- channels cannot
+prevent information flowing both ways. **FIXME: a discrimination between "data" and "information" is needed here, or the statement is unclear. Perhaps  "information" means the "fixed length communication messages, including ACK messages". In such case this statement would imply that every piece of data is acknowledged by the recipient (or presumed lost), there is no datagram-type communication.**
 
 Communication between two PDs does in general **not** imply a specific trust relationship between the two PDs.
 
@@ -189,9 +187,7 @@ A communication channel between two PDs provides the following:
 * Ability for one PD (the client) to make *protected procedure calls* (PPCs) to the
 other PD (the server).
 
-A PPC channel is directed: it has a *caller PD* which can invoke
-  a PPC to a *callee PD*. This form of channel *does* imply a trust
-  relationship: the caller trusts the callee.
+A PPC channel is directed: it has a *caller PD* which can invoke a PPC to a *callee PD*. This form of channel *does* imply a trust relationship: the caller trusts the callee.
 
 The overall communication relationships between protection domains can be expressed as a non-directed, cyclic graph.
 
@@ -199,12 +195,9 @@ The overall communication relationships between protection domains can be expres
 ### Protected Procedure Calls
 
 A protected procedure call (PPC) enables the caller PD to invoke a
-*protected procedure* residing in the callee PD. This is
-uni-directional, the roles of caller and callee cannot be reversed.
-The caller PD must trust the callee PD.
+*protected procedure* residing in the callee PD. This is uni-directional, the roles of caller and callee cannot be reversed. The caller PD must trust the callee PD.
 
-A PD can have at most one protected procedure. Arguments ("opcode") passed through the
-call can be used to choose from different functionalities the callee
+A PD can have at most one protected procedure. Arguments ("opcode") passed through the call can be used to choose from different functionalities the callee
 may provide, according to a callee-defined protocol.
 
 The seL4 Core Platform provides a *static architecture*, where all PDs
@@ -278,9 +271,8 @@ memory (see below).
 
 > This limitation on the size of by-value arguments is forced by the
 > (architecture-dependent) limits on the payload size of the
-> underlying seL4 operations, as well as by efficiency
-> considerations. Similar limitations exist in the C ABIs of various
-> platforms.
+> underlying seL4 operations, as well as by efficiency considerations.
+> Similar limitations exist in the C APIs of various platforms.
 
 The seL4 Core Platform provides the callee with the (non-forgeable)
 identify of the caller PD. The callee may use this to associate client
@@ -356,7 +348,7 @@ semaphore).
 
 > The number of unique notifiers per PD is limited to the number
 > of bits in a machine word by the underlying seL4 Notification
-> mechanism.
+> mechanism. **FIXME: I assume this is the same restriction (28 on 32bit and 64 on 64bit architecture) as described in Implementation.Channel section below. it would be good to clarify how such number came about, even if it requires some implementation details. **
 > This is expected to be sufficient for the
 > target application domains of the seL4 Core Platform. Should the
 > number of notifiers exceed this limit, a more complex protocol will
@@ -520,7 +512,7 @@ any pair of PDs.
 
 This means that the maximum number of client a PD can have is
 determined by the dataword inside the seL4 badge (28 on 32-bit and 64
-on 64-bit architectures).
+on 64-bit architectures). **FIXME: it would be good to clarify how such number came about, even if it requires some implementation details. ATM, this 'maximum number" does not follow from de description here above**
 
 ## Notifications
 
@@ -536,7 +528,7 @@ cases, although that is hidden inside the Platform.**
 ## Protected procedure calls
 
 The PPC mechanism abstracts over seL4 IPC. A PD providing a
-`protected` entry point must have an seK4 endpoint to enable the
+`protected` entry point must have an seL4 endpoint to enable the
 control transfer, as well as an seL4 *passive TCB* (i.e. with no
 scheduling context attached).
 
