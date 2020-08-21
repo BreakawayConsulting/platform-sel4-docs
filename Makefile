@@ -20,7 +20,8 @@ LaTeXWarn = ' [Ww]arning: '
 all:	$(NAME).pdf
 
 %.tex:	%.md Makefile defaults.yaml sel4.sty
-	$(Md2Tex) $< -o - -d defaults.yaml -t latex -N > $@
+	$(Md2Tex) $< -o - -d defaults.yaml -t latex -N | \
+	sed -e '/^ *hidelinks,/d' > $@
 
 %.pdf:	%.tex
 #	Assume for now that there's no bibtex run needed

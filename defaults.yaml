@@ -6,3 +6,5 @@ variables:
    - 12pt
    - a4paper
   fontfamily: sel4
+  hyperrefoptions:
+   - colorlinks=true
