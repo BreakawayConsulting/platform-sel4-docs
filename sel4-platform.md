@@ -284,7 +284,7 @@ memory (see below).
 > This limitation on the size of by-value arguments is forced by the
 > (architecture-dependent) limits on the payload size of the
 > underlying seL4 operations, as well as by efficiency considerations.
-> Similar limitations exist in the C APIs of various platforms.
+> Similar limitations exist in the C ABIs (Application Binary Interfaces) of various platforms.
 
 The seL4 Core Platform provides the callee with the (non-forgeable)
 identify of the caller PD. The callee may use this to associate client
