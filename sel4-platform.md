@@ -53,6 +53,50 @@ system architecture and to one that provides enough features and power
 for this usage class, enabling a much simpler set of developer-visible
 abstractions.
 
+# The seL4 Core Platform is Not Posix compatible
+
+## Why?
+
+The Unix model is now [over half a century
+old](https://link.springer.com/content/pdf/10.1007%2F3-540-09745-7_2.pdf). It
+was great when it was created, it started getting a bit dated by the
+time it became standardised as Posix in 1988, and it is really not
+longer the right model. Hence, we specifically do *not* aim to be
+Posix compatible, and instead try to come up with what is best for
+seL4 and its use cases.
+
+## Can you be more specific?
+
+Posix has many things that made sense on a 1969-vintage PDP-7 or
+PDP-11, but are not the right approach today. This includes:
+
+A global name space
+
+: This is nice for easily locating and referencing objects. It has the
+distasteful side effect of introducing covert storage channels. Not a
+good match for seL4, which is designed to be highly secure and
+*proved* to be free of storage channels.
+
+Copying I/O interfaces
+
+: Posix treats everything as a file, and the interfaces are read/write
+by copying things to and from argument buffers. This is not a good
+model for a high-performance system, and seL4 is designed for high
+performance. I/O interfaces should be zero-copy.
+
+Posix is heavyweight
+
+: Posix threads and process are expensive to create and use, orders of
+magnitude than the seL4 equivalents. They do much more, of course, but
+a lot of the time you don't need this. Let's allow seL4-based systems
+to remain slim!
+
+fork() was cool 50 years ago on a PDP-11
+
+: but it's very uncool today:
+["We catalog the ways in which fork is a terrible abstraction for the modern programmer to use."](https://dl.acm.org/doi/pdf/10.1145/3317550.3321435)
+'Nuff said.
+
 # Terminology
 
 As with any set of abstractions there are words that take on special meanings.
