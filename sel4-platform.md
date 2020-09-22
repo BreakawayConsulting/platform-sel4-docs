@@ -87,15 +87,24 @@ performance. I/O interfaces should be zero-copy.
 Posix is heavyweight
 
 : Posix threads and process are expensive to create and use, orders of
-magnitude than the seL4 equivalents. They do much more, of course, but
-a lot of the time you don't need this. Let's allow seL4-based systems
-to remain slim!
+magnitude than the seL4 equivalents. For example, we measured on an
+Intel Skylake platform that creating and deleting a Pthread costs over
+500\ µs, while signal/wait and context switch takes over 50\ µs. In
+contrast, switching between seL4 threads (eg via IPC) is about 0.1\ µs!
+<!-- Pthreads:
+https://bitbucket.ts.data61.csiro.au/users/pchubb/repos/pthreadsbench/browse -->
+
+: Of course, Posix threads do much more than seL4 threads, but
+most of the time you don't need this extra functionality (and
+weight). Let's allow seL4-based systems to remain slim!
 
 fork() was cool 50 years ago on a PDP-11
 
 : but it's very uncool today:
 ["We catalog the ways in which fork is a terrible abstraction for the modern programmer to use."](https://dl.acm.org/doi/pdf/10.1145/3317550.3321435)
 'Nuff said.
+
+## So, how do I run my legacy software?
 
 # Terminology
 
