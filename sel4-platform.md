@@ -7,6 +7,11 @@
 	Date is optional; if no date is given, author(s) is optional.
 -->
 
+<!--
+	Copyright 2020, Ben Leslie, Gernot Heiser
+	SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+	
 \doCopyright[2020]
 <!--
 	Keep the above command at the top to produce the copyright note,
@@ -70,14 +75,14 @@ seL4 and its use cases.
 Posix has many things that made sense on a 1969-vintage PDP-7 or
 PDP-11, but are not the right approach today. This includes:
 
-A global name space
+Posix has a global name space
 
 : This is nice for easily locating and referencing objects. It has the
 distasteful side effect of introducing covert storage channels. Not a
 good match for seL4, which is designed to be highly secure and
 *proved* to be free of storage channels.
 
-Copying I/O interfaces
+Posix uses copying I/O interfaces
 
 : Posix treats everything as a file, and the interfaces are read/write
 by copying things to and from argument buffers. This is not a good
@@ -87,7 +92,7 @@ performance. I/O interfaces should be zero-copy.
 Posix is heavyweight
 
 : Posix threads and process are expensive to create and use, orders of
-magnitude than the seL4 equivalents. For example, we measured on an
+magnitude more than the seL4 equivalents. For example, we measured on an
 Intel Skylake platform that creating and deleting a Pthread costs over
 500\ µs, while signal/wait and context switch takes over 50\ µs. In
 contrast, switching between seL4 threads (eg via IPC) is about 0.1\ µs!
@@ -106,6 +111,9 @@ fork() was cool 50 years ago on a PDP-11
 
 ## So, how do I run my legacy software?
 
+The seL4 Core Platform provides [virtual machines](#vm) so you can run
+a Linux OS to support your legacy stacks.
+
 # Terminology
 
 As with any set of abstractions there are words that take on special meanings.
@@ -115,12 +123,13 @@ necessary to use a term prior to its formal introduction.
 
 Following is a list of the terms introduced in this document.
 
-* processor core (core)
-* protection domain (PD)
-* communication channel (CC)
-* memory region
-* notification
-* protected procedure call (PPC)
+* [processor core (core)](#core)
+* [protection domain (PD)](#pd)
+* [communication channel (CC)](#cc)
+* [memory region](#region)
+* [notification](#notification)
+* [protected procedure call (PPC)](#ppc)
+* [virtual machine (VM)](#vm)
 
 As these abstractions are built on seL4 abstractions, their
 explanations need to refer to the seL4 terms (in *italics*). This will help readers
@@ -135,7 +144,7 @@ this document.
 
 # Abstractions
 
-## Processor Core
+## Processor Core ## {#core}
 
 The seL4 Core Platform is designed to run on multi-core systems.
 
@@ -153,7 +162,7 @@ systems, nor systems with non-uniform memory access (NUMA).
 > to support them would introduce unwarranted complexity into the
 > platform, as such processors are presently uncommon in the target domains.
 
-## Protection Domain
+## Protection Domain {#pd}
 
 A **protection domain** (PD) is the fundamental runtime abstraction in the seL4 platform.
 It is analogous, but very different in detail, to a process on a UNIX system.
@@ -202,7 +211,7 @@ channel* is established between the PDs.
 > requires additional infrastructure for which we see no need in the
 > near future.
 
-## Memory regions
+## Memory regions {#region}
 
 A memory region is a contiguous range of physical memory.
 A memory region must be at least page size.
@@ -233,7 +242,7 @@ I don't understand what it means for the region to be attached to a
 channel in this case.**
 
 
-## Communication Channels
+## Communication Channels {#cc}
 
 Protection domains can communicate (exchanging data, control or both)
 via *communication channels*. Each channel connects exactly two PDs;
@@ -257,7 +266,7 @@ A PPC channel is directed: it has a *caller PD* which can invoke a PPC to a *cal
 The overall communication relationships between protection domains can be expressed as a non-directed, cyclic graph.
 
 
-### Protected Procedure Calls
+### Protected Procedure Calls {#ppc}
 
 A protected procedure call (PPC) enables the caller PD to invoke a
 *protected procedure* residing in the callee PD. This is uni-directional, the roles of caller and callee cannot be reversed. The caller PD must trust the callee PD.
@@ -388,7 +397,7 @@ be converted to offsets into the channel-attached memory region.
 > the specification will specify semantics for part of the shared region (headers).
 
 
-### Notifications
+### Notifications ### {#notification}
 
 A notification is a semaphore-like synchronisation mechanism. A PD can
 signal another PD's notification to indicate availability of data in
@@ -419,6 +428,14 @@ semaphore).
 > number of notifiers exceed this limit, a more complex protocol will
 > need to be specified that allows disambiguating a larger number of notifiers.**
 
+## Virtual machine {#vm}
+
+A VM is a PD with extra attributes that leverage architectural support
+for virtualisation. A VM will normally run a legacy OS binary and
+applications. The whole virtual machine appears to other PDs as just a
+single PD, i.e. its internal processes are not directly visible.
+
+**To be completed**
 
 # Runtime API
 
