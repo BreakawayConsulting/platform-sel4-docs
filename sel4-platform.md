@@ -307,7 +307,7 @@ graph, and build tool should enforce this property.
 > servers*, where shared resources are encapsulated in a component
 > that ensures mutual exclusion, while avoiding unbounded priority
 > inversions through the *immediate priority ceiling protocol*.
-
+>
 > While it would be possible to achieve the same by allowing PPCs
 > between PDs of the same priority, this would be much harder to
 > statically analyse for loop-freedom (and thus deadlock-freedom). The

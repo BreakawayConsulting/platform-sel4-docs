@@ -2,7 +2,7 @@
 % SPDX-License-Identifier: CC-BY-SA-4.0
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{sel4}[2020/09/23 v0.8 seL4 Foundation letterhead and title page]
+\ProvidesPackage{sel4}[2020/09/24 v1.0 seL4 Foundation letterhead and title page]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Letterhead and title page for the seL4 Foundation
@@ -54,6 +54,10 @@
 \usepackage[sfdefault]{roboto}
 \RequirePackage{xcolor}
 \RequirePackage[iso]{isodate}
+\RequirePackage{hyperref}
+% Coloured quoted text:
+% \RequirePackage[breakable]{tcolorbox}
+\usepackage[breakable]{tcolorbox}
 
 \if@titlepage
 \typeout{sel4 style with titlepage}
@@ -81,6 +85,15 @@
 \colorlet{logoGreen}{greenLogo}
 \colorlet{seL4Green}{greenLogo}
 
+% hyperref
+\hypersetup{colorlinks, allcolors=neutral, anchorcolor=black,
+            citecolor=greenDark, linkcolor=greenDark}
+% tcolorbox
+\newtcolorbox{cquote}{colback=neutralLighter,boxrule=0pt,boxsep=0pt,breakable}
+\renewenvironment{quote}
+{\list{}{\rightmargin=2ex \leftmargin=4ex}%
+ \item\relax\cquote}
+{\endcquote\endlist}
 
 %% definitions
 \renewcommand{\familydefault}{\sfdefault}
