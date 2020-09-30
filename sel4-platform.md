@@ -230,7 +230,7 @@ The mapping has a number of attributes, which include:
 A memory region may be mapped into multiple PDs; the mapping addresses
 for each PD may be different. A memory region can also be mapped
 multiple times into the same PD (for example, with different caching
-attributes), the address of such multiple mappings must be different. **FIXME[Chris]: a clarification why VA of multiple mappings must be different would be helpful here. An example would also be good. A scenario I can think of is [Read-Copy-Update](https://en.wikipedia.org/wiki/Read-copy-update) but unsure if it applies here**
+attributes). Mappings (of the same or different regions) must not overlap. **FIXME[Chris]: a clarification why VA of multiple mappings must be different would be helpful here. An example would also be good. A scenario I can think of is [Read-Copy-Update](https://en.wikipedia.org/wiki/Read-copy-update) but unsure if it applies here. [Gernot:] Because you can use the same VA only for one thing, not two?**
 
 A memory region may also be *attached* to a communication channel (see
 below), irrespective of whether the region is mapped into any PD or not. Such
@@ -249,8 +249,18 @@ via *communication channels*. Each channel connects exactly two PDs;
 there are no multi-party channels. Each pair of PDs can have at most
 one communication channel.
 
-Communication through channels may be uni- or bi-directional in terms of data, but is always bi-directional in terms of information flow -- channels cannot
-prevent information flowing both ways. **FIXME[Chris]: a discrimination between "data" and "information" is needed here, or the statement is unclear. Perhaps  "information" means the "fixed length communication messages, including ACK messages". In such case this statement would imply that every piece of data is acknowledged by the recipient (or presumed lost), there is no datagram-type communication.**
+Communication through channels may be uni- or bi-directional in terms
+of data movement, but is always bi-directional in terms of information
+flow: due to synchronisation, channels cannot
+prevent information flowing both ways. **FIXME[Chris]: a
+discrimination between "data" and "information" is needed here, or the
+statement is unclear. Perhaps  "information" means the "fixed length
+communication messages, including ACK messages". In such case this
+statement would imply that every piece of data is acknowledged by the
+recipient (or presumed lost), there is no datagram-type
+communication. [Gernot:] Hope this clarifies it, I don't really want
+to make much fuss about this, as it's just a warning not to expect
+more than is promised.**
 
 Communication between two PDs does in general **not** imply a specific trust relationship between the two PDs.
 
@@ -279,18 +289,12 @@ are determined at system build time. In such a system, the PPC call
 graph can be statically determined, which supports determining certain
 security and safety properties by static analysis.
 
-The PPC in the system form a directed, acyclic graph, i.e. they
-*cannot contain loops*.
-
-**FIXME[Gernot]: The following discussion seems redundant, as the pio
-assignment rule already guarantees all relevant properties.**
-I.e.: It is not valid that have PD *A* calling PD *B*, which in turns calls PD *A*.
-It is an error to construct a system that contains loop (such an error should be determined at construction time in a static system; in a dynamic system managers must ensure changes to the system do not introduce loops).
-
-It is allowed for a protected procedure to make a PPC as long as it does not cause a loop.
-For example, PD *A* can call PD *B*, which in turn calls PD *C* as
-part of protected procedure.
-**END FIXME**
+Nested calls are possible, but
+the PPCs in the system form a directed, acyclic graph, i.e. the graph
+*cannot contain loops* (such as *A* calls *B* calls *C*).
+It is an error to construct a system that contains loops. (In a static
+systems such an error should be detected at construction time. In a
+dynamic systems, loops must be prevented when channels are established.)
 
 The callee of a PPC must have a strictly higher priority than the
 caller. This property is statically enforceable from the acyclic call
@@ -422,11 +426,10 @@ semaphore).
 
 > The number of unique notifiers per PD is limited to the number
 > of bits in a machine word by the underlying seL4 Notification
-> mechanism. **FIXME[Chris]: I assume this is the same restriction (28 on 32bit and 64 on 64bit architecture) as described in Implementation.Channel section below. it would be good to clarify how such number came about, even if it requires some implementation details. **
-> This is expected to be sufficient for the
+> mechanism. This is expected to be sufficient for the
 > target application domains of the seL4 Core Platform. Should the
 > number of notifiers exceed this limit, a more complex protocol will
-> need to be specified that allows disambiguating a larger number of notifiers.**
+> need to be specified that allows disambiguating a larger number of notifiers.
 
 ## Virtual machine {#vm}
 
@@ -594,7 +597,10 @@ any pair of PDs.
 
 This means that the maximum number of client a PD can have is
 determined by the dataword inside the seL4 badge (28 on 32-bit and 64
-on 64-bit architectures). **FIXME[Chris]: it would be good to clarify how such number came about, even if it requires some implementation details. ATM, this 'maximum number" does not follow from de description here above**
+on 64-bit architectures). 
+
+**FIXME[Chris]: it would be good to clarify how such number came about, even if it requires some implementation details. ATM, this 'maximum number" does not follow from de description here above**
+**[Gernot:] I don't think this is the place to justify/explain seL4 implementation specifics. But I agree that the above is a non-sequitur. What is meant is each client has a unique badge bit. This is needed if it is possible for multiple notifications being signalled before the server gets to respond to them. It may be possible to avoid this by prio assignment, but it's probably easier to just keep it simple for now.**
 
 ## Notifications
 
