@@ -225,18 +225,18 @@ The mapping has a number of attributes, which include:
 * caching attributes (mostly relevant for device memory)
 * permissions (full access, R/O, X/O).
 
-**FIXME: The VA be better also aligned to the region's size.**
+**FIXME[Gernot]: The VA be better also aligned to the region's size.**
 
 A memory region may be mapped into multiple PDs; the mapping addresses
 for each PD may be different. A memory region can also be mapped
 multiple times into the same PD (for example, with different caching
-attributes), the address of such multiple mappings must be different. **FIXME: a clarification why VA of multiple mappings must be different would be helpful here. An example would also be good. A scenario I can think of is [Read-Copy-Update](https://en.wikipedia.org/wiki/Read-copy-update) but unsure if it applies here**
+attributes), the address of such multiple mappings must be different. **FIXME[Chris]: a clarification why VA of multiple mappings must be different would be helpful here. An example would also be good. A scenario I can think of is [Read-Copy-Update](https://en.wikipedia.org/wiki/Read-copy-update) but unsure if it applies here**
 
 A memory region may also be *attached* to a communication channel (see
 below), irrespective of whether the region is mapped into any PD or not. Such
 an attachment supports transmission of data structures with memory
 pointers.
-**FIXME: I would assume this only works if the region is also mapped
+**FIXME[Gernot]: I would assume this only works if the region is also mapped
 to both PDs and it's mapped at the same address in those PDs. However,
 I don't understand what it means for the region to be attached to a
 channel in this case.**
@@ -250,7 +250,7 @@ there are no multi-party channels. Each pair of PDs can have at most
 one communication channel.
 
 Communication through channels may be uni- or bi-directional in terms of data, but is always bi-directional in terms of information flow -- channels cannot
-prevent information flowing both ways. **FIXME: a discrimination between "data" and "information" is needed here, or the statement is unclear. Perhaps  "information" means the "fixed length communication messages, including ACK messages". In such case this statement would imply that every piece of data is acknowledged by the recipient (or presumed lost), there is no datagram-type communication.**
+prevent information flowing both ways. **FIXME[Chris]: a discrimination between "data" and "information" is needed here, or the statement is unclear. Perhaps  "information" means the "fixed length communication messages, including ACK messages". In such case this statement would imply that every piece of data is acknowledged by the recipient (or presumed lost), there is no datagram-type communication.**
 
 Communication between two PDs does in general **not** imply a specific trust relationship between the two PDs.
 
@@ -282,7 +282,7 @@ security and safety properties by static analysis.
 The PPC in the system form a directed, acyclic graph, i.e. they
 *cannot contain loops*.
 
-**FIXME: THe following discussion seems redundant, as the pio
+**FIXME[Gernot]: The following discussion seems redundant, as the pio
 assignment rule already guarantees all relevant properties.**
 I.e.: It is not valid that have PD *A* calling PD *B*, which in turns calls PD *A*.
 It is an error to construct a system that contains loop (such an error should be determined at construction time in a static system; in a dynamic system managers must ensure changes to the system do not introduce loops).
@@ -335,7 +335,7 @@ with an indication that the operation is not complete, and use a
 notification-based protocol to inform the callee when it is
 time to retry the operation.
 
-PPC arguments are passed by-value (i.e. copied) and are limited to 64 machine words. **FIXME:
+PPC arguments are passed by-value (i.e. copied) and are limited to 64 machine words. **FIXME[Gernot]:
 This is too high, it could be 512B, which is more than seL4 supports
 (I think) and certainly more than should ever be used. 64B seems more appropriate.**
 Bulk data transfer must use a by-reference mechanism using shared
@@ -359,7 +359,7 @@ access control.
 > capabilities*, the seL4 Core Platform will provide each client with
 > a different badged capability for the servers's endpoint.
 
-**FIXME: Client/server pops up here for the first time, before we were
+**FIXME[Gernot]: Client/server pops up here for the first time, before we were
 only talking about caller/callee. I think we should introduce this
 terminology earlier.**
 
@@ -369,13 +369,13 @@ A communication channel may have an attached shared memory region.
 The memory accessible read-write (but not executable) by both
 protection domains sharing the channel.
 
-**FIXME: I'm still not sure whether shared memory is necessarily
+**FIXME[Gernot]: I'm still not sure whether shared memory is necessarily
 attached to a channel. Obviously, any shared memory constitutes a
 channel, and if we want to have only one channel per PD pair, then
-there can only be channel-associated mapped regions. [gernot]**
+there can only be channel-associated mapped regions.**
 
 The region size can be an arbitrary number of pages, but must be
-mapped into contiguous virtual memory. **FIXME Above we said it was a
+mapped into contiguous virtual memory. **FIXME[Gernot]: Above we said it was a
 power of two. The continuous virtual mapping is already implied above
 by defining a memory region as contiguous in PM and mappable at a
 particular VMA**
@@ -383,8 +383,8 @@ The virtual memory region need not be the same in each PD.
 [Note: we may want to restrict to power-of-two to allow fast offset verification.]
 
 In the case of PPC the server PD maintains a mapping from callee
-identity (badge) to the virtual memory. **FIXME: Not sure what this
-means. [Gernot]**
+identity (badge) to the virtual memory. **FIXME[Gernot]: Not sure what this
+means.**
 
 A PPC must *never* pass virtual-memory addresses directly, they must
 be converted to offsets into the channel-attached memory region.
@@ -422,7 +422,7 @@ semaphore).
 
 > The number of unique notifiers per PD is limited to the number
 > of bits in a machine word by the underlying seL4 Notification
-> mechanism. **FIXME: I assume this is the same restriction (28 on 32bit and 64 on 64bit architecture) as described in Implementation.Channel section below. it would be good to clarify how such number came about, even if it requires some implementation details. **
+> mechanism. **FIXME[Chris]: I assume this is the same restriction (28 on 32bit and 64 on 64bit architecture) as described in Implementation.Channel section below. it would be good to clarify how such number came about, even if it requires some implementation details. **
 > This is expected to be sufficient for the
 > target application domains of the seL4 Core Platform. Should the
 > number of notifiers exceed this limit, a more complex protocol will
@@ -444,7 +444,7 @@ single PD, i.e. its internal processes are not directly visible.
 `Channel` is an opaque reference to a specific channel.
 This type is used extensively through-out the functional API.
 
-`Memptr` is an opaque reference to a pointer. **FIXME: Do you really
+`Memptr` is an opaque reference to a pointer. **FIXME[Gernot]: Do you really
 mean reference to a pointer, or should this be an opaque reference to
 a memory location? And I assume it is tied to a memory object?**
 Memptr can be decoded into specific pointers.
@@ -456,13 +456,13 @@ Memptr can be decoded into specific pointers.
 Every protection domain must expose an `init` function.
 This is called by the system when the protection domain is created.
 The `init` function executes using the protection domain's scheduling context.
-**FIXME: Presumably it will be called exactly once? How does it terminate?**
+**FIXME[Gernot]: Presumably it will be called exactly once? How does it terminate?**
 
 ### `void notified(Channel channel)`
 
 The `notified` entry point is called by the system when the protection domain has received a notification via a communication channel.
 A channel identifier is passed to the function indicating which channel was notified.
-**FIXME: More than one channel may have been notified. If so, I assume
+**FIXME[Gernot]: More than one channel may have been notified. If so, I assume
 the entry point will be called multiple times, based on some priority
 convention (numerically largest bage)?**
 
@@ -473,8 +473,8 @@ The `protected` entry point is called by the system when another PD
 makes a protected procedure call to the PD via a channel.
 The caller is identified via the `channel` parameter.
 
-The parameters passed by the caller may be accessed via **FIXME**.
-Any return values should be set via **FIXME**.
+The parameters passed by the caller may be accessed via **FIXME[Benno]**.
+Any return values should be set via **FIXME[Benno]**.
 
 When the `protected` entry point returns, the protected procedure call
 completes (i.e. control returns to the caller).
@@ -489,7 +489,7 @@ Send a notification to a specific channel.
 ### `void ppcall(Channel channel)`
 
 Perform a protected-procedure call to a specified channel.
-Any parameters should be set via **FIXME**.
+Any parameters should be set via **FIXME[Benno]**.
 
 ### `Memptr memptr_encode(Channel channel, ....)`
 
@@ -499,14 +499,14 @@ Encode a pointer to a memory address.
 
 Decode the `memptr` to a pointer.
 
-**FIXME:** If this is a bad ptr, how is that handled? Return null or exception?
+**FIXME[Benno]:** If this is a bad ptr, how is that handled? Return null or exception?
 
 ### `Dmaptr memptr_decode(Channel channel, Memptr memptr)`
 
 Decode the `memptr` to a DMA address.
 This is used to convert `memptr` to values that can be used by bus masters.
 
-**FIXME:** Handling of bad ptrs, also likely need a DMA context of some description for cases when there is I/O MMU.
+**FIXME[Benno]:** Handling of bad ptrs, also likely need a DMA context of some description for cases when there is I/O MMU.
 
 
 ### `Memptr memptr_transcode(Channel from_channel, Memptr memptr, Channel to_channel)`
@@ -515,11 +515,11 @@ Directly decode/encode a `memptr` associated with `from_channel` to a memptr ass
 
 ### Setting IPC buffers
 
-**FIXME**: Need to have APIs for setting the IPC buffer.
+**FIXME[Benno]**: Need to have APIs for setting the IPC buffer.
 
 ### Cache operations
 
-**FIXME**: Need to have APIs for performing cache flushes, etc.
+**FIXME[Benno]**: Need to have APIs for performing cache flushes, etc.
 
 
 # System construction concepts
@@ -558,7 +558,7 @@ performs a PPC on a PD it does not trust.
 A static system is one where the protection domains that make up the
 system are defined at system build time. Note that
 a static system may be composed of dynamic protection
-domains. **FIXME: unclear what this means. I assume you mean that a PD
+domains. **FIXME[Gernot]: unclear what this means. I assume you mean that a PD
 may be created some time after sysinit, it can go away while the
 system continues to run, and it can be re-created. Correct?**
 
@@ -569,7 +569,7 @@ which are capable of creating new protection domains at run-time, and
 of managing the seL4 *Cspace* of other protection domains.
 
 A dynamic system may be composed of both static and dynamic protection
-domains. **FIXME: again, unclear.**
+domains. **FIXME[Gernot]: again, unclear.**
 
 
 
@@ -594,14 +594,14 @@ any pair of PDs.
 
 This means that the maximum number of client a PD can have is
 determined by the dataword inside the seL4 badge (28 on 32-bit and 64
-on 64-bit architectures). **FIXME: it would be good to clarify how such number came about, even if it requires some implementation details. ATM, this 'maximum number" does not follow from de description here above**
+on 64-bit architectures). **FIXME[Chris]: it would be good to clarify how such number came about, even if it requires some implementation details. ATM, this 'maximum number" does not follow from de description here above**
 
 ## Notifications
 
-**The PD's SC is initially associated with its TCB for executing the
-`init` entry point. When that returns, the Platoform binds the SC to the PD's Notification.**
+The PD's SC is initially associated with its TCB for executing the
+`init` entry point. When that returns, the Platform binds the SC to the PD's Notification.
 
-**FIXME: If a PD offers a `protected` entry point, then its Notification must
+**FIXME[Gernot]: If a PD offers a `protected` entry point, then its Notification must
 obviously be bound to the TCB. If the PD has no `protected` entry point, it
 doesn't have an endpoint either, so the TCB must directly receive from
 the Notification. I.e. the coding differes a bit between the two
@@ -621,7 +621,7 @@ protected procedure.
 
 The callee PD's passive TCB waits on the PD's endpoint using **seL4_Wait** or **seL4_ReplyWait**.
 
-If the scheduling context does not provide sufficient *budget*, then [**FIXME: detail needed here, can be an error, can require server to context switch the TCB back to waiting on something else.**]
+If the scheduling context does not provide sufficient *budget*, then [**FIXME[Gernot]: detail needed here, can be an error, can require server to context switch the TCB back to waiting on something else.**]
 
 <!--  LocalWords:  PDs Cspace
  -->
