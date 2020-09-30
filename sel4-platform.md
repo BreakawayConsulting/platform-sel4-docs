@@ -60,15 +60,15 @@ abstractions.
 
 # The seL4 Core Platform is Not Posix compatible
 
-## Why?
+**Rationale**
 
-The Unix model is now [over half a century
+> The Unix model is now [over half a century
 old](https://link.springer.com/content/pdf/10.1007%2F3-540-09745-7_2.pdf). It
-was great when it was created, it started getting a bit dated by the
-time it became standardised as Posix in 1988, and it is really not
-longer the right model. Hence, we specifically do *not* aim to be
-Posix compatible, and instead try to come up with what is best for
-seL4 and its use cases.
+> was great when it was created, it started getting a bit dated by the
+> time it became standardised as Posix in 1988, and it is really not
+> longer the right model. Hence, we specifically do *not* aim to be
+> Posix compatible, and instead try to come up with what is best for
+> seL4 and its use cases.
 
 ## Can you be more specific?
 

@@ -32,7 +32,6 @@ all:	$(NAME).pdf
 	@echo "====> LaTeX first pass: $(<)"
 	$(LaTeX) $< >.log || if egrep -q $(Error) $*.log ; then cat .log; rm $@; false ; fi
 	@if egrep -q $(Rerun) $*.log ; then echo "====> LaTeX rerun" && $(LaTeX) >.log $<; fi
-	$(LaTeX) $< >.log || if egrep -q $(Error) $*.log ; then cat .log; rm $@; false ; fi
 	@echo "====> Undefined references and citations in $(<):"
 	@egrep -i $(Undefined) $*.log || echo "None."
 	@echo "====> Warnings:"
