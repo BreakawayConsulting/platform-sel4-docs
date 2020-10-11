@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: CC-BY-SA-4.0
 
 #######################
-### Set this to the basename of your .md document
-NAME=sel4-platform
+### Set this to the basename of your .md document(s)
+NAMES=sel4-platform sel4-core
 
 ### Configure options
 Md2Pdf	   = pandoc
@@ -17,11 +17,13 @@ Undefined = '((Reference|Citation).*undefined)|(Label.*multiply defined)'
 Error = '^! '
 BibWarn = '^Warning--'
 LaTeXWarn = ' [Ww]arning: '
+Pdf = $(addsuffix .pdf, $(NAMES))
+Tex = $(addsuffix .tex, $(NAMES))
 
 .PHONY: all
-.SECONDARY: $(NAME).tex
+.SECONDARY: $(Tex)
 
-all:	$(NAME).pdf
+all:	$(Pdf)
 
 %.tex:	%.md Makefile defaults.yaml sel4.sty
 	$(Md2Tex) $< -o - -d defaults.yaml -t latex -N | \
