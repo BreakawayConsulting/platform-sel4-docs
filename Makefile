@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: CC-BY-SA-4.0
 
 #######################
-### Set this to the basename of your .md document(s)
+### Set this to the basename(s) of your .md document(s)
 NAMES=sel4-platform sel4-core
 
 ### Configure options
 Md2Pdf	   = pandoc
-Md2Tex     = pandoc --biblatex 
+Md2Tex     = pandoc -f markdown+raw_tex+implicit_figures+link_attributes #--biblatex 
 LaTeX      = pdflatex -interaction=nonstopmode
 
 ### Macros 
