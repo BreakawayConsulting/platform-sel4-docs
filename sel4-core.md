@@ -1,4 +1,4 @@
-% The seL4^\textregistered^\ Core
+% The seL4 Core
 % Benno
 % Draft of \today
 <!--
@@ -8,7 +8,7 @@
 -->
 
 <!--
-	Copyright 2020, Ben Leslie, Gernot Heiser
+	Copyright 2020, Ben Leslie
 	SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 	

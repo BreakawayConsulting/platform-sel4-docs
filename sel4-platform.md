@@ -1,4 +1,4 @@
-% The seL4^\textregistered^\ Core Platform
+% The seL4 Core Platform
 % Benno, Gernot
 % Draft of \today
 <!--
