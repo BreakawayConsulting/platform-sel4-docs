@@ -415,7 +415,7 @@ notification.
 > by the seL4 Core Platform.
 
 Depending on the assignment of priorities and cores to PDs, a PD's
-notification may be signalled multiple times (bu different clients)
+notification may be signalled multiple times (by different clients)
 before the PD can start processing them. The receiving PD can identify
 the different clients and process all requests. However, if a client
 signals the same PD multiple times before that PD gets to process the
