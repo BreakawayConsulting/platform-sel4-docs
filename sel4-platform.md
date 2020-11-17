@@ -11,7 +11,7 @@
 	Copyright 2020, Ben Leslie, Gernot Heiser
 	SPDX-License-Identifier: CC-BY-SA-4.0
 -->
-	
+
 \doCopyright[2020]
 <!--
 	Keep the above command at the top to produce the copyright note,
@@ -38,7 +38,7 @@ Platform;
   implementations of the same logical service to adapt to
 usage-specific trade-offs and ease compatibility between
 implementation of system services from different developers;
-* leverages seL4's strong isolation
+* leverage seL4's strong isolation
 properties to support a near-minimal *trusted computing base* (TCB);
 * retain seL4's trademark performance for systems built with it;
 * be, in principle, amenable to formal analysis of system safety and
@@ -111,8 +111,13 @@ fork() was cool 50 years ago on a PDP-11
 
 ## So, how do I run my legacy software?
 
-The seL4 Core Platform provides [virtual machines](#vm) so you can run
-a Linux OS to support your legacy stacks.
+The initial intended use cases considered are those for which
+new software is being written to take advantage of the features
+provide be seL4 and the seL4 Core Platform.
+
+Future versions of the seL4 Core Platform intend to provide a
+[virtual machines](#vm) abstraction that allows running legacy
+software within a Linux operating system.
 
 # Terminology
 
@@ -127,9 +132,13 @@ Following is a list of the terms introduced in this document.
 * [protection domain (PD)](#pd)
 * [communication channel (CC)](#cc)
 * [memory region](#region)
+* attached memory region
+* memory reference
 * [notification](#notification)
-* [protected procedure call (PPC)](#ppc)
+* [protected procedure](#pp)
 * [virtual machine (VM)](#vm)
+* client
+* server
 
 As these abstractions are built on seL4 abstractions, their
 explanations need to refer to the seL4 terms (in *italics*). This will help readers
@@ -192,7 +201,7 @@ The protected procedure will not run in parallel with either the
 initialisation or the notification procedures, so there is no need for
 concurrency control within a PD.
 
-There is a small set of seL4 platform APIs that a protection domain may make use of (from any type of procedure).
+There is a small set of seL4 Core Platform APIs that a protection domain may make use of (from any type of procedure).
 These are:
 
 * call a protected procedure in a different protection domain
@@ -214,9 +223,7 @@ channel* is established between the PDs.
 ## Memory regions {#region}
 
 A memory region is a contiguous range of physical memory.
-A memory region must be at least page size.
-The size of a memory region must be a power-of-2 multiple of the base
-page size (4KiB) and the region must be aligned to its size.
+The size of a memory region must be a multiple of a supported page size.
 
 A memory region may be mapped into a protection domain.
 The mapping has a number of attributes, which include:
@@ -225,22 +232,17 @@ The mapping has a number of attributes, which include:
 * caching attributes (mostly relevant for device memory)
 * permissions (full access, R/O, X/O).
 
-**FIXME[Gernot]: The VA be better also aligned to the region's size.**
-
 A memory region may be mapped into multiple PDs; the mapping addresses
 for each PD may be different. A memory region can also be mapped
 multiple times into the same PD (for example, with different caching
-attributes). Mappings (of the same or different regions) must not overlap. **FIXME[Chris]: a clarification why VA of multiple mappings must be different would be helpful here. An example would also be good. A scenario I can think of is [Read-Copy-Update](https://en.wikipedia.org/wiki/Read-copy-update) but unsure if it applies here. [Gernot:] Because you can use the same VA only for one thing, not two?**
+attributes). Mappings (of the same or different regions) must not overlap.
 
 A memory region may also be *attached* to a communication channel (see
-below), irrespective of whether the region is mapped into any PD or not. Such
-an attachment supports transmission of data structures with memory
-pointers.
-**FIXME[Gernot]: I would assume this only works if the region is also mapped
-to both PDs and it's mapped at the same address in those PDs. However,
-I don't understand what it means for the region to be attached to a
-channel in this case.**
+below), irrespective of whether the region is mapped into any PD or not.
 
+When a memory region is attached to a communication channel it provides
+a mechanism for communication channels to refer to data structures within
+the region in a safe manner.
 
 ## Communication Channels {#cc}
 
@@ -252,34 +254,85 @@ one communication channel.
 Communication through channels may be uni- or bi-directional in terms
 of data movement, but is always bi-directional in terms of information
 flow: due to synchronisation, channels cannot
-prevent information flowing both ways. **FIXME[Chris]: a
-discrimination between "data" and "information" is needed here, or the
-statement is unclear. Perhaps  "information" means the "fixed length
-communication messages, including ACK messages". In such case this
-statement would imply that every piece of data is acknowledged by the
-recipient (or presumed lost), there is no datagram-type
-communication. [Gernot:] Hope this clarifies it, I don't really want
-to make much fuss about this, as it's just a warning not to expect
-more than is promised.**
+prevent information flowing both ways.
 
 Communication between two PDs does in general **not** imply a specific trust relationship between the two PDs.
+
+The overall communications within th system form a non-directed, cyclic graph with protection domains as the nodes and communication channels as the edges.
 
 A communication channel between two PDs provides the following:
 
 * Ability for each PD to *notify* the other PD.
-* Ability to *reference a memory region* associated with the communication channel.
-* Ability for one PD (the client) to make *protected procedure calls* (PPCs) to the
-other PD (the server).
+* Ability to reference memory within a memory region attached to the communication channel.
+* Optionally, the ability to make protected procedure calls from one PD to the other.
 
-A PPC channel is directed: it has a *caller PD* which can invoke a PPC to a *callee PD*. This form of channel *does* imply a trust relationship: the caller trusts the callee.
+Each of these is defined in more detail in the following sections.
 
-The overall communication relationships between protection domains can be expressed as a non-directed, cyclic graph.
+### Notifications ### {#notification}
 
+A notification is a semaphore-like synchronisation mechanism. A PD can
+signal another PD's notification to indicate availability of data in
+an attached memory region. The notification transfers the signalling
+PD's unforgeable identity. There is no payload associated with a
+notification.
 
-### Protected Procedure Calls {#ppc}
+**Note**
+
+> Details of the notification protocol are not presently defined
+> by the seL4 Core Platform.
+
+Depending on the assignment of priorities and cores to PDs, a PD's
+notification may be signalled multiple times (by different clients)
+before the PD can start processing them. The receiving PD can identify
+the different clients and process all requests. However, if a client
+signals the same PD multiple times before that PD gets to process the
+notification, it will only receive it once (it behaves as a binary
+semaphore).
+
+**Note**
+
+> The number of unique notifiers per PD is limited to the number
+> of bits in a machine word by the underlying seL4 Notification
+> mechanism. This is expected to be sufficient for the
+> target application domains of the seL4 Core Platform. Should the
+> number of notifiers exceed this limit, a more complex protocol will
+> need to be specified that allows disambiguating a larger number of notifiers.
+
+### Attached Memory Region
+
+Memory regions may be attached to a communication channel.
+It is possible for multiple memory regions to be attached to a communication channel.
+
+Attached memory regions provided a way for the PD utilizing the communication channel to refer to a specific memory location.
+A memory reference is an efficient encoding that identifies a specific offset within an attached memory region.
+
+Normally an attached memory region will be mapped into both protection domains, however it is likely that the memory region will be mapped at different virtual address in each PD.
+Additionally, it could be mapped with different permissions.
+For example, it may be read-write in one PD, while read-only in the other.
+When an attached memory region is mapped into a PD the Platform provides suitable functions for converting between a pointer and a memory reference.
+
+It is important to note that raw pointers to virtual-memory addresses should never be passed between protection domains.
+
+A memory reference is specific to a given communication channel.
+Alternatively, a protection domain can use a memory reference to create a new memory reference that is valid for a different communication channel (assuming that the memory region
+
+**Note**
+
+> The seL4 Core Platform does not presently impose a structure
+> on a channel-attached memory region. We expect that future versions of
+> the specification will specify semantics for part of the shared region (headers).
+
+### Protected Procedures {#pp}
 
 A protected procedure call (PPC) enables the caller PD to invoke a
-*protected procedure* residing in the callee PD. This is uni-directional, the roles of caller and callee cannot be reversed. The caller PD must trust the callee PD.
+*protected procedure* residing in the callee PD.
+A PD that provides a protected procedure is referred to as a *server* PD.
+A PD that calls a protected procedure is referred to as a *client* PD.
+
+Transitive calls are possible, and as such a PD may be both a *client* and a *server*.
+However the overall relationship between clients and server forms a directed, acyclic graph.
+It follows that a PD can not call itself, even indirectly.
+For example, `A calls B calls C` is valid, while `A calls B calls A` is not valid.
 
 A PD can have at most one protected procedure. Arguments ("opcode") passed through the call can be used to choose from different functionalities the callee
 may provide, according to a callee-defined protocol.
@@ -288,13 +341,6 @@ The seL4 Core Platform provides a *static architecture*, where all PDs
 are determined at system build time. In such a system, the PPC call
 graph can be statically determined, which supports determining certain
 security and safety properties by static analysis.
-
-Nested calls are possible, but
-the PPCs in the system form a directed, acyclic graph, i.e. the graph
-*cannot contain loops* (such as *A* calls *B* calls *C*).
-It is an error to construct a system that contains loops. (In a static
-systems such an error should be detected at construction time. In a
-dynamic systems, loops must be prevented when channels are established.)
 
 The callee of a PPC must have a strictly higher priority than the
 caller. This property is statically enforceable from the acyclic call
@@ -323,7 +369,7 @@ graph, and build tool should enforce this property.
 > reduction of the usable priority space is unlikely to cause problems.
 
 The protected procedure implementation in the callee PD *must not
-block*, ie it must execute on behalf of the caller at all times.
+block*, i.e. it must execute on behalf of the caller at all times.
 Ideally, this property should be enforced by the platform's build/analysis
 tools.
 
@@ -339,11 +385,7 @@ with an indication that the operation is not complete, and use a
 notification-based protocol to inform the callee when it is
 time to retry the operation.
 
-PPC arguments are passed by-value (i.e. copied) and are limited to 64 machine words. **FIXME[Gernot]:
-This is too high, it could be 512B, which is more than seL4 supports
-(I think) and certainly more than should ever be used. 64B seems more appropriate.**
-Bulk data transfer must use a by-reference mechanism using shared
-memory (see below).
+PPC arguments are passed by-value (i.e. copied) and are limited to 16 machine words.
 
 **Rationale**
 
@@ -361,75 +403,7 @@ access control.
 
 > The caller identity is provided through seL4 *badged endpoint
 > capabilities*, the seL4 Core Platform will provide each client with
-> a different badged capability for the servers's endpoint.
-
-**FIXME[Gernot]: Client/server pops up here for the first time, before we were
-only talking about caller/callee. I think we should introduce this
-terminology earlier.**
-
-### Shared Memory
-
-A communication channel may have an attached shared memory region.
-The memory accessible read-write (but not executable) by both
-protection domains sharing the channel.
-
-**FIXME[Gernot]: I'm still not sure whether shared memory is necessarily
-attached to a channel. Obviously, any shared memory constitutes a
-channel, and if we want to have only one channel per PD pair, then
-there can only be channel-associated mapped regions.**
-
-The region size can be an arbitrary number of pages, but must be
-mapped into contiguous virtual memory. **FIXME[Gernot]: Above we said it was a
-power of two. The continuous virtual mapping is already implied above
-by defining a memory region as contiguous in PM and mappable at a
-particular VMA**
-The virtual memory region need not be the same in each PD.
-[Note: we may want to restrict to power-of-two to allow fast offset verification.]
-
-In the case of PPC the server PD maintains a mapping from callee
-identity (badge) to the virtual memory. **FIXME[Gernot]: Not sure what this
-means.**
-
-A PPC must *never* pass virtual-memory addresses directly, they must
-be converted to offsets into the channel-attached memory region.
-[Note: There are possibly neat implementation tricks to make this fast especially is the region is sufficiently aligned].
-
-**Note**
-
-> The seL4 Core Platform does not presently impose a structure
-> on a channel-attached memory region. We expect that future versions of
-> the specification will specify semantics for part of the shared region (headers).
-
-
-### Notifications ### {#notification}
-
-A notification is a semaphore-like synchronisation mechanism. A PD can
-signal another PD's notification to indicate availability of data in
-channel-associated memory. The notification transfers the signalling
-PD's unforgeable identity. There is no payload associated with a
-notification.
-
-**Note**
-
-> Details of the notification protocol are not presently defined
-> by the seL4 Core Platform.
-
-Depending on the assignment of priorities and cores to PDs, a PD's
-notification may be signalled multiple times (by different clients)
-before the PD can start processing them. The receiving PD can identify
-the different clients and process all requests. However, if a client
-signals the same PD multiple times before that PD gets to process the
-notification, it will only receive it once (it behaves as a binary
-semaphore).
-
-**Note**
-
-> The number of unique notifiers per PD is limited to the number
-> of bits in a machine word by the underlying seL4 Notification
-> mechanism. This is expected to be sufficient for the
-> target application domains of the seL4 Core Platform. Should the
-> number of notifiers exceed this limit, a more complex protocol will
-> need to be specified that allows disambiguating a larger number of notifiers.
+> a different badged capability for the server's endpoint.
 
 ## Virtual machine {#vm}
 
@@ -438,96 +412,9 @@ for virtualisation. A VM will normally run a legacy OS binary and
 applications. The whole virtual machine appears to other PDs as just a
 single PD, i.e. its internal processes are not directly visible.
 
-**To be completed**
-
-# Runtime API
-
-## Types
-
-`Channel` is an opaque reference to a specific channel.
-This type is used extensively through-out the functional API.
-
-`Memptr` is an opaque reference to a pointer. **FIXME[Gernot]: Do you really
-mean reference to a pointer, or should this be an opaque reference to
-a memory location? And I assume it is tied to a memory object?**
-Memptr can be decoded into specific pointers.
-
-## Entry Points
-
-### `void init(void)`
-
-Every protection domain must expose an `init` function.
-This is called by the system when the protection domain is created.
-The `init` function executes using the protection domain's scheduling context.
-**FIXME[Gernot]: Presumably it will be called exactly once? How does it terminate?**
-
-### `void notified(Channel channel)`
-
-The `notified` entry point is called by the system when the protection domain has received a notification via a communication channel.
-A channel identifier is passed to the function indicating which channel was notified.
-**FIXME[Gernot]: More than one channel may have been notified. If so, I assume
-the entry point will be called multiple times, based on some priority
-convention (numerically largest bage)?**
-
-### `void protected(Channel channel)`
-
-The `protected` entry point is optional.
-The `protected` entry point is called by the system when another PD
-makes a protected procedure call to the PD via a channel.
-The caller is identified via the `channel` parameter.
-
-The parameters passed by the caller may be accessed via **FIXME[Benno]**.
-Any return values should be set via **FIXME[Benno]**.
-
-When the `protected` entry point returns, the protected procedure call
-completes (i.e. control returns to the caller).
-
-
-## Functions
-
-### `void notify(Channel channel)`
-
-Send a notification to a specific channel.
-
-### `void ppcall(Channel channel)`
-
-Perform a protected-procedure call to a specified channel.
-Any parameters should be set via **FIXME[Benno]**.
-
-### `Memptr memptr_encode(Channel channel, ....)`
-
-Encode a pointer to a memory address.
-
-### `void * memptr_decode(Channel channel, Memptr memptr)`
-
-Decode the `memptr` to a pointer.
-
-**FIXME[Benno]:** If this is a bad ptr, how is that handled? Return null or exception?
-
-### `Dmaptr memptr_decode(Channel channel, Memptr memptr)`
-
-Decode the `memptr` to a DMA address.
-This is used to convert `memptr` to values that can be used by bus masters.
-
-**FIXME[Benno]:** Handling of bad ptrs, also likely need a DMA context of some description for cases when there is I/O MMU.
-
-
-### `Memptr memptr_transcode(Channel from_channel, Memptr memptr, Channel to_channel)`
-
-Directly decode/encode a `memptr` associated with `from_channel` to a memptr associated with `to_channel`.
-
-### Setting IPC buffers
-
-**FIXME[Benno]**: Need to have APIs for setting the IPC buffer.
-
-### Cache operations
-
-**FIXME[Benno]**: Need to have APIs for performing cache flushes, etc.
-
-
-# System construction concepts
-
-This section introduces some other concepts related to building systems.
+Virtual machines are to be fully described in later version of the
+seL4 Core Platform definition. They are not intended to be made
+available in the initial release of the platform.
 
 ## Trust
 
@@ -556,27 +443,76 @@ enables static analysis of trust, for example to ensure that no PD
 performs a PPC on a PD it does not trust.
 
 
-## Static system
+# Runtime API
 
-A static system is one where the protection domains that make up the
-system are defined at system build time. Note that
-a static system may be composed of dynamic protection
-domains. **FIXME[Gernot]: unclear what this means. I assume you mean that a PD
-may be created some time after sysinit, it can go away while the
-system continues to run, and it can be re-created. Correct?**
+This section provides an overview of what the runtime API may look like.
+At this point it is meant to be informational only, and is not to be considered the defined API.
+A full API shall be made available as part of future detailed design and implementation phases.
 
-## Dynamic system
+## Types
 
-A dynamic system has one (or potentially more) protection domains
-which are capable of creating new protection domains at run-time, and
-of managing the seL4 *Cspace* of other protection domains.
+`Channel` is an opaque reference to a specific channel.
+This type is used extensively through-out the functional API.
 
-A dynamic system may be composed of both static and dynamic protection
-domains. **FIXME[Gernot]: again, unclear.**
+`MemRef` is an opaque reference to a memory location with an attached memory region.
+
+## Entry Points
+
+### `void init(void)`
+
+Every protection domain must expose an `init` function.
+This is called by the system when the protection domain is created.
+The `init` function executes using the protection domain's scheduling context.
+
+### `void notified(Channel channel)`
+
+The `notified` entry point is called by the system when the protection domain has received a notification via a communication channel.
+A channel identifier is passed to the function indicating which channel was notified.
+
+### `void protected(Channel channel)`
+
+The `protected` entry point is optional.
+The `protected` entry point is called by the system when another PD
+makes a protected procedure call to the PD via a channel.
+The caller is identified via the `channel` parameter.
+
+When the `protected` entry point returns, the protected procedure call
+completes (i.e. control returns to the caller).
+
+## Functions
+
+### `void notify(Channel channel)`
+
+Send a notification to a specific channel.
+
+### `void ppcall(Channel channel)`
+
+Perform a protected-procedure call to a specified channel.
+
+### `MemRef memref_encode(Channel channel, void *p)`
+
+Given a pointer to a location in virtual memory, create a memory reference referring to that pointer.
+
+The memory reference is valid for the specified channel.
+
+A NULL memory reference is returned on error.
+
+### `void * memref_decode(Channel channel, MemRef memref)`
+
+Given a memory reference for a specific channel decode the memory reference into a pointer.
+
+A NULL pointer is returned on error.
+
+### `MemRef memref_transcode(Channel from_channel, Channel to_channel, MemRef memref)`
+
+Directly decode/encode a `memref` associated with `from_channel` to a memref associated with `to_channel`.
 
 
+# Mapping to seL4 Constructs
 
-# Implementation
+This section gives an overview of how each of the seL4 Core Platform concepts maps to the underlying seL4 APIs.
+
+This intention of this is to provide readers familiar with the underlying seL4 concepts a better understanding of the abstractions presented in this document.
 
 ## Channels
 
@@ -597,20 +533,17 @@ any pair of PDs.
 
 This means that the maximum number of client a PD can have is
 determined by the dataword inside the seL4 badge (28 on 32-bit and 64
-on 64-bit architectures). 
-
-**FIXME[Chris]: it would be good to clarify how such number came about, even if it requires some implementation details. ATM, this 'maximum number" does not follow from de description here above**
-**[Gernot:] I don't think this is the place to justify/explain seL4 implementation specifics. But I agree that the above is a non-sequitur. What is meant is each client has a unique badge bit. This is needed if it is possible for multiple notifications being signalled before the server gets to respond to them. It may be possible to avoid this by prio assignment, but it's probably easier to just keep it simple for now.**
+on 64-bit architectures).
 
 ## Notifications
 
 The PD's SC is initially associated with its TCB for executing the
 `init` entry point. When that returns, the Platform binds the SC to the PD's Notification.
 
-**FIXME[Gernot]: If a PD offers a `protected` entry point, then its Notification must
-obviously be bound to the TCB. If the PD has no `protected` entry point, it
+Note: If a PD offers a `protected` entry point, then its Notification shall
+be bound to the TCB. If the PD has no `protected` entry point, it
 doesn't have an endpoint either, so the TCB must directly receive from
-the Notification. I.e. the coding differes a bit between the two
+the Notification. I.e. implementation differs a bit between the two
 cases, although that is hidden inside the Platform.**
 
 ## Protected procedure calls
@@ -620,14 +553,12 @@ The PPC mechanism abstracts over seL4 IPC. A PD providing a
 control transfer, as well as an seL4 *passive TCB* (i.e. with no
 scheduling context attached).
 
-To perform a PPC, the caller uses the *seL4_CallWait* system call, transferring 
+To perform a PPC, the caller uses the *seL4_CallWait* system call, transferring
 the caller's scheduling context to the callee.
 The callee executes on the caller's scheduling context until the return of the
 protected procedure.
 
 The callee PD's passive TCB waits on the PD's endpoint using **seL4_Wait** or **seL4_ReplyWait**.
-
-If the scheduling context does not provide sufficient *budget*, then [**FIXME[Gernot]: detail needed here, can be an error, can require server to context switch the TCB back to waiting on something else.**]
 
 <!--  LocalWords:  PDs Cspace
  -->
