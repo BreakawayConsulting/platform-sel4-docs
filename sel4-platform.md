@@ -113,7 +113,7 @@ fork() was cool 50 years ago on a PDP-11
 
 The initial intended use cases considered are those for which
 new software is being written to take advantage of the features
-provide be seL4 and the seL4 Core Platform.
+provided by seL4 and the seL4 Core Platform.
 
 Future versions of the seL4 Core Platform intend to provide a
 [virtual machines](#vm) abstraction that allows running legacy
@@ -555,12 +555,12 @@ The PPC mechanism abstracts over seL4 IPC. A PD providing a
 control transfer, as well as an seL4 *passive TCB* (i.e. with no
 scheduling context attached).
 
-To perform a PPC, the caller uses the *seL4_CallWait* system call, transferring
+To perform a PPC, the caller uses the *seL4_Call* system call, transferring
 the caller's scheduling context to the callee.
 The callee executes on the caller's scheduling context until the return of the
 protected procedure.
 
-The callee PD's passive TCB waits on the PD's endpoint using **seL4_Wait** or **seL4_ReplyWait**.
+The callee PD's passive TCB waits on the PD's endpoint using **seL4_Recv** or **seL4_ReplyRecv**.
 
 <!--  LocalWords:  PDs Cspace
  -->
