@@ -132,13 +132,13 @@ Following is a list of the terms introduced in this document.
 * [protection domain (PD)](#pd)
 * [communication channel (CC)](#cc)
 * [memory region](#region)
-* attached memory region
-* memory reference
+* [attached memory region](#amr)
+* [memory reference](#amr)
 * [notification](#notification)
 * [protected procedure](#pp)
 * [virtual machine (VM)](#vm)
-* client
-* server
+* [client](#pp)
+* [server](#pp)
 
 As these abstractions are built on seL4 abstractions, their
 explanations need to refer to the seL4 terms (in *italics*). This will help readers
@@ -258,7 +258,7 @@ prevent information flowing both ways.
 
 Communication between two PDs does in general **not** imply a specific trust relationship between the two PDs.
 
-The overall communications within th system form a non-directed, cyclic graph with protection domains as the nodes and communication channels as the edges.
+The overall communications within the system form a non-directed, cyclic graph with protection domains as the nodes and communication channels as the edges.
 
 A communication channel between two PDs provides the following:
 
@@ -291,51 +291,54 @@ semaphore).
 
 **Note**
 
-> The number of unique notifiers per PD is limited to the number
-> of bits in a machine word by the underlying seL4 Notification
+> The number of unique notifiers per PD, and thus the number of CCs
+> that can connect to a PD, is limited to the number
+> of bits in a machine word by the underlying seL4 *Notification*
 > mechanism. This is expected to be sufficient for the
 > target application domains of the seL4 Core Platform. Should the
 > number of notifiers exceed this limit, a more complex protocol will
 > need to be specified that allows disambiguating a larger number of notifiers.
 
-### Attached Memory Region
+### Attached Memory Region {#amr}
 
 Memory regions may be attached to a communication channel.
 It is possible for multiple memory regions to be attached to a communication channel.
 
+**FIXME[Gernot]: I think we agreed that attached MRs are power-of-two sized and size-aligned.**
+
 Attached memory regions provided a way for the PD utilizing the communication channel to refer to a specific memory location.
-A memory reference is an efficient encoding that identifies a specific offset within an attached memory region.
+A **memory reference** is an efficient encoding that identifies a specific offset within an attached memory region.
 
 Normally an attached memory region will be mapped into both protection domains, however it is likely that the memory region will be mapped at different virtual address in each PD.
 Additionally, it could be mapped with different permissions.
 For example, it may be read-write in one PD, while read-only in the other.
-When an attached memory region is mapped into a PD the Platform provides suitable functions for converting between a pointer and a memory reference.
+When an attached memory region is mapped into a PD, the Platform provides suitable functions for converting between a pointer and a memory reference.
 
 It is important to note that raw pointers to virtual-memory addresses should never be passed between protection domains.
 
-A memory reference is specific to a given communication channel.
-Alternatively, a protection domain can use a memory reference to create a new memory reference that is valid for a different communication channel (assuming that the memory region
+A memory reference is bound to a given communication channel.
+Alternatively, a protection domain can use a memory reference to create a new memory reference that is valid for a different communication channel (assuming that the memory region is mapped into all PDs that reference it).
 
 **Note**
 
 > The seL4 Core Platform does not presently impose a structure
 > on a channel-attached memory region. We expect that future versions of
-> the specification will specify semantics for part of the shared region (headers).
+> the specification will specify semantics for parts of the shared region (headers).
 
 ### Protected Procedures {#pp}
 
 A protected procedure call (PPC) enables the caller PD to invoke a
 *protected procedure* residing in the callee PD.
-A PD that provides a protected procedure is referred to as a *server* PD.
-A PD that calls a protected procedure is referred to as a *client* PD.
+A PD that provides a protected procedure is referred to as a **server** PD.
+A PD that calls a protected procedure is referred to as a **client** PD.
 
-Transitive calls are possible, and as such a PD may be both a *client* and a *server*.
+Transitive calls are possible, and as such a PD may be both a client and a server.
 However the overall relationship between clients and server forms a directed, acyclic graph.
 It follows that a PD can not call itself, even indirectly.
 For example, `A calls B calls C` is valid, while `A calls B calls A` is not valid.
 
-A PD can have at most one protected procedure. Arguments ("opcode") passed through the call can be used to choose from different functionalities the callee
-may provide, according to a callee-defined protocol.
+A PD can have at most one protected procedure. Arguments ("opcode") passed through the call can be used to choose from different functionalities the server
+may provide, according to a server-defined protocol.
 
 The seL4 Core Platform provides a *static architecture*, where all PDs
 are determined at system build time. In such a system, the PPC call
@@ -376,7 +379,7 @@ tools.
 **Note**
 
 > Once the platform is extended to support concurrent (multicore)
-> callee PDs, this will support concurrently serving one callee per
+> server PDs, this will support concurrently serving one client per
 > core.
 
 A PD providing a potentially long-running service, eg. a file system,
@@ -392,16 +395,15 @@ PPC arguments are passed by-value (i.e. copied) and are limited to 16 machine wo
 > This limitation on the size of by-value arguments is forced by the
 > (architecture-dependent) limits on the payload size of the
 > underlying seL4 operations, as well as by efficiency considerations.
-> Similar limitations exist in the C ABIs (Application Binary Interfaces) of various platforms.
+> The PPC payload should be considered as analogous to function arguments in the C language; similar limitations exist in the C ABIs (Application Binary Interfaces) of various platforms.
 
-The seL4 Core Platform provides the callee with the (non-forgeable)
-identify of the caller PD. The callee may use this to associate client
-state with the caller (e.g. for long-running operations) and enforce
+The seL4 Core Platform provides the server with the (non-forgeable)
+identify of the client PD. The server may use this to associate state with the client (e.g. for long-running operations) and enforce
 access control.
 
 **Note**
 
-> The caller identity is provided through seL4 *badged endpoint
+> The client identity is provided through seL4 *badged endpoint
 > capabilities*, the seL4 Core Platform will provide each client with
 > a different badged capability for the server's endpoint.
 
@@ -412,7 +414,7 @@ for virtualisation. A VM will normally run a legacy OS binary and
 applications. The whole virtual machine appears to other PDs as just a
 single PD, i.e. its internal processes are not directly visible.
 
-Virtual machines are to be fully described in later version of the
+Virtual machines are to be fully described in a later version of the
 seL4 Core Platform definition. They are not intended to be made
 available in the initial release of the platform.
 
