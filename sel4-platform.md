@@ -304,8 +304,6 @@ semaphore).
 Memory regions may be attached to a communication channel.
 It is possible for multiple memory regions to be attached to a communication channel.
 
-**FIXME[Gernot]: I think we agreed that attached MRs are power-of-two sized and size-aligned.**
-
 Attached memory regions provided a way for the PD utilizing the communication channel to refer to a specific memory location.
 A **memory reference** is an efficient encoding that identifies a specific offset within an attached memory region.
 
