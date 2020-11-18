@@ -1,6 +1,6 @@
 % The seL4 Core Platform
-% Benno, Gernot
-% Draft of \today
+% Ben Leslie <benno@brkawy.com>, Gernot Heiser <gernot@sel4.systems>
+% Draft of 2020-11-16
 <!--
 	Use the above to set title, author and date.
 	First use of seL4 must have registered trademark sign, as above.
