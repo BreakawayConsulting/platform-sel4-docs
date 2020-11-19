@@ -1,6 +1,6 @@
 % The seL4 Core
-% Benno
-% Draft of \today
+% Ben Leslie <benno@brkawy.com>
+% Draft of 2020-11-02
 <!--
 	Use the above to set title, author and date.
 	First use of seL4 must have registered trademark sign, as above.
