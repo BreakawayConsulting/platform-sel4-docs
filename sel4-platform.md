@@ -1,6 +1,6 @@
 % The seL4 Core Platform
 % Ben Leslie <benno@brkawy.com>, Gernot Heiser <gernot@sel4.systems>
-% Draft of 2020-11-16
+% Draft of 2020-11-24
 <!--
 	Use the above to set title, author and date.
 	First use of seL4 must have registered trademark sign, as above.
@@ -441,6 +441,42 @@ For reasoning about a system's security properties it is important
 that the trust relation is made explicit by the system designer. This
 enables static analysis of trust, for example to ensure that no PD
 performs a PPC on a PD it does not trust.
+
+
+# FAQ
+
+Here we summarise the main questions asked during the discussion
+phase. Most of them should be answered in the preceding sections of
+this document, but we'll keep them separate for now to ensure
+agreement on updates and avoid version confusions.
+
+Can communication channels cross cores?
+
+: Yes, of course. Remember, any PD may have a CC to any other PD, and
+each PD is tied to a specific core via its scheduling
+context. Ignoring PPCs for a second, communication is through shared
+memory (MRs mapped into both PDs) and Notifications. A Notification
+can be signalled from any core.
+
+: A PPC, however, always executes on the Client's core, so it is
+always core-local. This means that, in general, a server's
+notification procedure executes on a different core than its
+notification procedure.
+
+What stops the notification and protected procedure from executing concurrently?
+
+: The notification and protected procedures are strictly
+sequentialised, and this is trivially guaranteed by seL4. The
+implementation of a PD has a single seL4 TCB, and is therefore
+guaranteed to be single-threaded. The Core Platform has this thread
+execute an event loop which gets triggered by Notifications and PPCs,
+and executes each event to its conclusion before being able to handle
+the next event.
+
+Is it possible to forcibly reset a PD to its initial state?
+
+: This is planned for the future, but will not be supported in the
+initial version. Similar for late loading of configured PDs.
 
 
 # Runtime API
